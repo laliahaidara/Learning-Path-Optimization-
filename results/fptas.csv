@@ -1,0 +1,6 @@
+algorithm,epsilon,value,ratio_to_optimum,operations
+exact DP,0,365,1.0,4680
+FPTAS,0.5,365,1.0,36690
+FPTAS,0.2,365,1.0,91680
+FPTAS,0.1,365,1.0,183330
+FPTAS,0.05,365,1.0,366630

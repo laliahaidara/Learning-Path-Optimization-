@@ -1,0 +1,7 @@
+family,n,bb_mean,bb_max,mitm_mean,dp_mean
+uncorrelated,20,428.4,690,8028.4,95070.2
+uncorrelated,30,682.8,834,261459.6,211031.8
+uncorrelated,40,1377.2,2087,8387201.6,389767.6
+strongly_correlated,20,6595.8,26368,8028.4,95070.2
+strongly_correlated,30,7654.6,16935,261459.6,211031.8
+strongly_correlated,40,17162,44475,8387201.6,389767.6

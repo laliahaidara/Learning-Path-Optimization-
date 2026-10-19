@@ -1,0 +1,115 @@
+
+### block: demo
+
+=== TEST INSTANCE (T = 10 h) ===
+1. Programming Logic    time=1  score=10  ratio=10.0
+2. Python Basics        time=5  score=46  ratio=9.2
+3. Data Structures      time=5  score=45  ratio=9.0
+4. Databases            time=2  score=15  ratio=7.5
+5. Networking           time=3  score=20  ratio=6.7
+6. Git                  time=1  score=6  ratio=6.0
+
+DP table (rows i = modules considered, columns t = 0..T):
+i\t   0   1   2   3   4   5   6   7   8   9  10
+  0   0   0   0   0   0   0   0   0   0   0   0
+  1   0  10  10  10  10  10  10  10  10  10  10
+  2   0  10  10  10  10  46  56  56  56  56  56
+  3   0  10  10  10  10  46  56  56  56  56  91
+  4   0  10  15  25  25  46  56  61  71  71  91
+  5   0  10  15  25  30  46  56  61  71  76  91
+  6   0  10  16  25  31  46  56  62  71  77  91
+
+Results:
+DFS             value=91   time used=10  ops=93    ['Python Basics', 'Data Structures']
+DP (table)      value=91   time used=10  ops=66    ['Python Basics', 'Data Structures']
+DP (vector)     value=91   time used=-   ops=49    (no reconstruction)
+DP (memoized)   value=91   time used=10  ops=32    ['Python Basics', 'Data Structures']
+B&B             value=91   time used=10  ops=70    ['Python Basics', 'Data Structures']
+MITM            value=91   time used=10  ops=46    ['Python Basics', 'Data Structures']
+Greedy          value=77   time used=9   ops=13    ['Programming Logic', 'Python Basics', 'Databases', 'Git']
+Greedy+item     value=77   time used=9   ops=19    ['Programming Logic', 'Python Basics', 'Databases', 'Git']
+FPTAS(0.1)      value=91   time used=10  ops=1098  ['Python Basics', 'Data Structures']
+
+Greedy gap on this instance: 15.4% (77 versus 91)
+
+Adversarial instance (T = 1000): short = 1h/2 pts (ratio 2.0), long = 1000h/1000 pts (ratio 1.0)
+  Greedy       value=2  gap=99.8%
+  Greedy+item  value=1000  gap=0.0%
+  DP (table)   value=1000  gap=0.0%
+   (0.0 s)
+
+### block: correctness
+Edge cases: 5 OK
+Correctness: 1200 random instances (n <= 16), failures = 0
+   (4.4 s)
+
+### block: time
+  n=10 ok
+  n=12 ok
+  n=14 ok
+  n=16 ok
+  n=18 ok
+  n=20 ok
+  n=22 ok
+   (8.2 s)
+
+### block: scale
+  n=50 T=273 ok
+  n=100 T=528 ok
+  n=200 T=1097 ok
+  n=400 T=1991 ok
+  n=600 T=3060 ok
+   (3.4 s)
+
+### block: quality
+greedy mean gap / max gap (by budget ratio), instances per point: 30
+  n=8  uncorrelated          10%: 2.5%/50.0%  30%: 1.8%/10.8%  50%: 1.6%/13.6%  70%: 0.8%/8.0%
+  n=8  weakly_correlated     10%: 6.7%/54.5%  30%: 5.5%/25.9%  50%: 4.2%/20.4%  70%: 2.4%/16.3%
+  n=8  strongly_correlated   10%: 7.1%/35.0%  30%: 7.0%/19.0%  50%: 5.2%/15.7%  70%: 6.8%/13.5%
+  n=15 uncorrelated          10%: 3.4%/23.1%  30%: 1.7%/9.1%  50%: 0.8%/4.7%  70%: 0.3%/1.7%
+  n=15 weakly_correlated     10%: 5.5%/19.0%  30%: 2.7%/8.9%  50%: 1.4%/6.8%  70%: 1.0%/5.1%
+  n=15 strongly_correlated   10%: 4.6%/14.6%  30%: 3.2%/7.9%  50%: 3.5%/8.2%  70%: 3.1%/7.2%
+  n=30 uncorrelated          10%: 1.1%/6.7%  30%: 0.4%/2.8%  50%: 0.5%/2.3%  70%: 0.3%/1.0%
+  n=30 weakly_correlated     10%: 1.5%/7.9%  30%: 1.0%/3.6%  50%: 0.5%/2.1%  70%: 0.4%/1.4%
+  n=30 strongly_correlated   10%: 2.2%/6.9%  30%: 2.2%/4.6%  50%: 1.5%/3.7%  70%: 1.6%/3.6%
+  n=60 uncorrelated          10%: 0.6%/2.6%  30%: 0.5%/1.8%  50%: 0.2%/0.7%  70%: 0.2%/0.6%
+  n=60 weakly_correlated     10%: 0.4%/2.4%  30%: 0.2%/0.9%  50%: 0.2%/0.6%  70%: 0.1%/0.4%
+  n=60 strongly_correlated   10%: 1.3%/3.3%  30%: 0.8%/2.2%  50%: 1.0%/2.0%  70%: 0.9%/1.6%
+   (1.2 s)
+
+### block: pseudo
+  factor x1 ok
+  factor x4 ok
+  factor x16 ok
+  factor x64 ok
+  factor x256 ok
+  factor x1024 ok
+   (2.4 s)
+
+### block: families
+  uncorrelated         n=20  B&B mean=        428 max=        690  MITM=      8028  DP=    95070
+  uncorrelated         n=30  B&B mean=        683 max=        834  MITM=    261460  DP=   211032
+  uncorrelated         n=40  B&B mean=       1377 max=       2087  MITM=   8387202  DP=   389768
+  strongly_correlated  n=20  B&B mean=       6596 max=      26368  MITM=      8028  DP=    95070
+  strongly_correlated  n=30  B&B mean=       7655 max=      16935  MITM=    261460  DP=   211032
+  strongly_correlated  n=40  B&B mean=      17162 max=      44475  MITM=   8387202  DP=   389768
+   (21.9 s)
+
+### block: fptas
+  exact DP  eps=0     value=365   ratio=1.0000  ops=4680
+  FPTAS     eps=0.5   value=365   ratio=1.0000  ops=36690
+  FPTAS     eps=0.2   value=365   ratio=1.0000  ops=91680
+  FPTAS     eps=0.1   value=365   ratio=1.0000  ops=183330
+  FPTAS     eps=0.05  value=365   ratio=1.0000  ops=366630
+   (0.1 s)
+
+### block: graph
+  n=4   paths generated=8       2^(n-1)=8
+  n=6   paths generated=32      2^(n-1)=32
+  n=8   paths generated=128     2^(n-1)=128
+  n=10  paths generated=512     2^(n-1)=512
+  n=12  paths generated=2048    2^(n-1)=2048
+  n=14  paths generated=8192    2^(n-1)=8192
+  n=16  paths generated=32768   2^(n-1)=32768
+   (0.0 s)
+exit=0
