@@ -1,0 +1,106 @@
+\section{Algorithm Design}\label{sec:design}
+
+This section addresses assignment item 1.1.1. For each technique we explain the \emph{motivation}, the \emph{logic} and the \emph{execution steps}, and we show how the techniques relate to one another.
+
+\subsection{The authors' technique: depth-first search over the decision tree}\label{sec:design-dfs}
+
+\paragraph{Motivation.} Without any assumption on the data, the only way to be sure of finding the best selection is to examine every feasible one. RUTICO does so by enumerating the paths of the course graph with a DFS \cite{nabizadeh2017rutico}. In the knapsack version of the problem, the enumeration is the traversal of a binary decision tree.
+
+\paragraph{Logic.} Each node of the tree is a partial decision $(i, u, s)$: modules $1,\dots,i$ have been decided, the selected ones use $u$ time units and have accumulated score $s$. The node has up to two children: \emph{take} module $i+1$ (only if $u+w_{i+1}\le T$, which is the pruning rule) and \emph{skip} it. Every node corresponds to a feasible selection, so the best score seen over all visited nodes is the optimum.
+
+\paragraph{Execution steps.}
+\begin{enumerate}[leftmargin=1.6em,itemsep=1pt]
+\item Start at the root $(0,0,0)$ with an empty list of chosen modules.
+\item At every node, if $s$ exceeds the best score so far, store a \emph{copy} of the chosen list.
+\item If all modules have been decided ($i=n$), return.
+\item If module $i+1$ fits, append it to the chosen list, recurse, and then \emph{remove} it (backtracking). Without this removal the state of one branch would contaminate the other.
+\item Recurse on the branch that skips module $i+1$.
+\end{enumerate}
+The running time is proportional to the number of visited nodes; on the test instance of Section~\ref{sec:testinstance} the DFS visits 93 nodes.
+
+\subsection{From the DFS to dynamic programming}\label{sec:design-bridge}
+
+\paragraph{Motivation.} The tree of Figure~\ref{fig:tree} has $2^n$ leaves, but its nodes are not all different. Consider the node reached after taking module 1 and skipping module 2, and the node reached after skipping module 1 and taking module 2: both have used the same time and therefore have the same remaining time $t$, and the best completion from them is identical. The DFS computes it twice.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  state/.style={draw,rounded corners=2pt,minimum width=1.05cm,minimum height=0.62cm,font=\small},
+  shared/.style={fill=orange!30},
+  edge/.style={-{Stealth[length=2mm]},font=\scriptsize}]
+\node[state] (r) at (0,0) {$(0,6)$};
+\node[state] (a) at (-3.4,-1.7) {$(1,4)$};
+\node[state] (b) at (3.4,-1.7) {$(1,6)$};
+\node[state] (aa) at (-5.1,-3.4) {$(2,2)$};
+\node[state,shared] (ab) at (-1.7,-3.4) {$(2,4)$};
+\node[state,shared] (ba) at (1.7,-3.4) {$(2,4)$};
+\node[state] (bb) at (5.1,-3.4) {$(2,6)$};
+\draw[edge] (r) -- node[above left] {take $m_1$} (a);
+\draw[edge] (r) -- node[above right] {skip $m_1$} (b);
+\draw[edge] (a) -- node[above left] {take $m_2$} (aa);
+\draw[edge] (a) -- node[above right] {skip $m_2$} (ab);
+\draw[edge] (b) -- node[above left] {take $m_2$} (ba);
+\draw[edge] (b) -- node[above right] {skip $m_2$} (bb);
+\foreach \n in {aa,ab,ba,bb}{
+  \draw[gray] (\n.south) -- ++(-0.55,-0.85) -- ++(1.1,0) -- cycle;
+}
+\node[font=\scriptsize,gray] at (-5.1,-5.0) {only ``skip $m_3$''};
+\node[font=\scriptsize,gray] at (-1.7,-5.0) {subtree of $m_3$};
+\node[font=\scriptsize,gray] at (1.7,-5.0) {identical subtree};
+\node[font=\scriptsize,gray] at (5.1,-5.0) {subtree of $m_3$};
+\draw[<->,dashed,orange!70!black] (ab.east) -- node[above,font=\scriptsize,text=black] {same state} (ba.west);
+\end{tikzpicture}
+\caption{Decision tree for three modules with times $w=(2,2,3)$ and budget $T=6$. A node $(i,t)$ means that modules $1,\dots,i$ were decided and $t$ time units remain. The two shaded nodes are the same state, reached by different decisions, and their subtrees are identical: the DFS explores both, a dynamic program explores one.}\label{fig:tree}
+\end{figure}
+
+\paragraph{Logic.} The key observation is that the best score obtainable from the undecided modules depends only on the pair $(i,t)$ and not on the path that led to it. Let $F(i,t)$ be the best score using modules $i+1,\dots,n$ within $t$ time units. Then $F(n,t)=0$ and
+\begin{equation}
+F(i,t)=\begin{cases}
+F(i+1,t) & \text{if } w_{i+1}>t,\\
+\max\{F(i+1,t),\; v_{i+1}+F(i+1,t-w_{i+1})\} & \text{otherwise.}
+\end{cases}
+\label{eq:suffix}
+\end{equation}
+There are only $n(T+1)$ distinct pairs $(i,t)$ with $0\le i<n$, in contrast to the $2^n$ leaves. Caching $F$ in the recursion gives the \emph{memoized} top-down algorithm (\code{dp\_memoized}); filling a table in dependency order gives the \emph{bottom-up} algorithm (\code{dp\_table}). The table in the code uses the equivalent prefix formulation of Section~\ref{sec:design-dp}. In short, \textbf{dynamic programming is the authors' DFS with memoization}, which is why it keeps the exactness of the exhaustive search and discards its redundancy.
+
+\subsection{The proposed technique: dynamic programming}\label{sec:design-dp}
+
+\paragraph{Logic.} Let $D[i][t]$ be the best score obtainable from the first $i$ modules within at most $t$ time units. Then $D[0][t]=0$ for every $t$, and for $i\ge1$
+\begin{equation}
+D[i][t]=\begin{cases}
+D[i-1][t] & \text{if } w_i>t,\\
+\max\{D[i-1][t],\; D[i-1][t-w_i]+v_i\} & \text{otherwise.}
+\end{cases}
+\label{eq:prefix}
+\end{equation}
+The first case says that module $i$ does not fit and cannot be used. In the second case there are exactly two options: leave module $i$ out (the best is $D[i-1][t]$) or take it, which consumes $w_i$ units and adds $v_i$ points, leaving $t-w_i$ units for the first $i-1$ modules. The recurrence refers to row $i-1$, never to row $i$, so each module is used at most once: this is what makes the problem 0/1 instead of unbounded.
+
+\paragraph{Execution steps.}
+\begin{enumerate}[leftmargin=1.6em,itemsep=1pt]
+\item \emph{Initialization:} fill row $0$ with zeros.
+\item \emph{Fill:} for $i=1,\dots,n$ and $t=0,\dots,T$, apply Equation~\eqref{eq:prefix}.
+\item \emph{Read the optimum:} $D[n][T]$ is the maximum score.
+\item \emph{Reconstruct:} start at $(i,t)=(n,T)$. If $D[i][t]\neq D[i-1][t]$, module $i$ was taken: record it and set $t\leftarrow t-w_i$. In either case set $i\leftarrow i-1$.
+\end{enumerate}
+
+\paragraph{Useful properties.} Because $D[i][t]$ is defined for \emph{at most} $t$ units, the last row $D[n][\cdot]$ contains the optimum for \emph{every} budget up to $T$, and the reconstruction works for any of them. This answers for free the natural question of a learner: ``what if I had only 8 hours?''. The table needs $(n+1)(T+1)$ cells; since a row depends only on the previous one, a single vector of $T+1$ cells suffices if $t$ is scanned in decreasing order (otherwise the already-updated value would be reused and a module could be taken several times) at the price of losing the reconstruction (\code{dp\_vector}).
+
+\subsection{The comparison technique: greedy strategy}\label{sec:design-greedy}
+
+\paragraph{Motivation.} The fractional knapsack is solved exactly by taking modules in decreasing order of $v_i/w_i$ (Section~\ref{sec:knapsack}). It is natural to try the same rule when modules are indivisible: it is simple and extremely fast.
+
+\paragraph{Logic and steps.} (1) Sort the modules by decreasing ratio; (2) scan them in this order and take every module that still fits. The sort is a merge sort, an instance of divide and conquer: \emph{divide} the list into two halves, \emph{conquer} by sorting each half recursively, \emph{combine} by merging the two sorted halves. Ratios are compared by cross-multiplication ($v_iw_j > v_jw_i$), avoiding divisions and floating-point issues, and the merge is stable.
+
+\paragraph{Why it can fail.} Because modules cannot be split, a short module with a high ratio can consume time that prevents a better combination. On the test instance the greedy takes modules 1, 2, 4 and 6 (9~h, score 77) while the optimum is modules 2 and 3 (10~h, score 91). The variant \code{greedy\_with\_best\_item} returns the better of the greedy solution and the best single module, which repairs the worst pathologies (Proposition~\ref{prop:greedy-half}).
+
+\subsection{Additional algorithms}\label{sec:design-extra}
+
+\paragraph{Branch and Bound.} \emph{Motivation:} the DFS explores subtrees that clearly cannot win. \emph{Logic:} sort the modules by ratio; at each node compute an upper bound by filling the remaining room with whole modules in ratio order and a fraction of the first one that does not fit (floored, because scores are integers); if the bound does not exceed the best known score, discard the subtree. \emph{Steps:} as in the DFS, plus the bound test before expanding a node.
+
+\paragraph{Meet-in-the-Middle.} \emph{Motivation:} reduce $2^n$ to about $2^{n/2}$ without depending on $T$. \emph{Logic:} split the modules into halves $A$ and $B$; enumerate the feasible subsets of each half sorted by time; for each subset of $A$, the best partner in $B$ is the best subset whose time is at most $T$ minus the time of the $A$-subset. \emph{Steps:} (1) generate each half's subsets by merging a list with its shifted copy, which keeps it sorted by time; (2) precompute for $B$ the best score among the subsets up to each position; (3) sweep $A$ in increasing time while a pointer in $B$ moves monotonically backwards.
+
+\paragraph{FPTAS.} \emph{Motivation:} obtain a guarantee that does not depend on $T$. \emph{Logic:} scale the scores to $v'_i=\lfloor v_i/K\rfloor$ with $K=\varepsilon v_{\max}/n$, which makes the sum of scaled scores at most $n^2/\varepsilon$, and solve the scaled instance exactly with a DP over the \emph{profit}: for each scaled score, the minimum time needed to reach it. \emph{Steps:} fill the profit table, pick the largest scaled score reachable within $T$, reconstruct the modules and sum their \emph{original} scores.
+
+\subsection{The authors' technique on the prerequisite graph}
+
+The extension \code{graph\_dfs.py} implements the strategy of the article on a graph of modules with prerequisites: starting from a source module, it enumerates every simple path whose accumulated time fits the budget, records the path with the highest score and uses backtracking to leave each path. On a complete DAG (an edge from $i$ to every $j>i$) every subset of the other $n-1$ nodes, taken in order, is a path, so there are $2^{n-1}$ paths; Section~\ref{sec:exp-graph} confirms this count.

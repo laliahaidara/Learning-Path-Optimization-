@@ -1,0 +1,260 @@
+\section{Implementation}\label{sec:implementation}
+
+\subsection{Environment and architecture}
+
+The prototype is written in Python (the reported experiments ran on Python 3.12; version 3.10 or newer is required) using only the standard library; the matplotlib library is used exclusively to draw the plots of Section~\ref{sec:experiments} and does not take part in any algorithm. Even the sorting routine is hand-written. The code runs on Linux with a single command (Appendix~\ref{app:run}). Its organization follows the two files requested by the assignment: the \emph{Algorithm} files and the \emph{Experiment} file.
+
+\begin{table}[h]
+\centering
+\caption{Organization of the source code.}\label{tab:files}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+File & Content\\
+\midrule
+\code{algorithms/model.py} & \code{LearningModule} (name, time, score), \code{Result} (algorithm, value, indices, operations), instance validation and evaluation of a selection\\
+\code{algorithms/sorting.py} & Stable hand-written merge sort; \code{sort\_by\_ratio} compares ratios by cross-multiplication\\
+\code{algorithms/dfs.py} & \code{exhaustive\_dfs}: the authors' strategy (decision tree, pruning, backtracking)\\
+\code{algorithms/graph\_dfs.py} & \code{dfs\_paths}, \code{complete\_dag}: DFS over the prerequisite graph\\
+\code{algorithms/dp.py} & \code{dp\_table}, \code{dp\_vector}, \code{dp\_memoized}: the proposed dynamic programming\\
+\code{algorithms/greedy.py} & \code{greedy}, \code{greedy\_with\_best\_item}: comparison algorithm and its variant with a guarantee\\
+\code{algorithms/branch\_and\_bound.py} & \code{branch\_and\_bound}\\
+\code{algorithms/meet\_in\_the\_middle.py} & \code{meet\_in\_the\_middle}\\
+\code{algorithms/fptas.py} & \code{fptas}\\
+\code{instances.py} & \code{generate\_instance}: the three instance families, reproducible by seed\\
+\code{experiment.py} & \textbf{Experiment file}: the test instance and nine blocks of experiments (command-line selectable)\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Every algorithm returns the same \code{Result} type, which makes comparisons and tests uniform and avoids duplicated code. The field \code{operations} is a deterministic counter of elementary steps whose meaning is fixed per algorithm (Table~\ref{tab:ops}).
+
+\begin{table}[h]
+\centering
+\caption{What each operation counter counts.}\label{tab:ops}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Algorithm & Counted operations\\
+\midrule
+\code{exhaustive\_dfs} & nodes of the decision tree visited\\
+\code{dp\_table} & table cells computed, exactly $n(T+1)$\\
+\code{dp\_vector} & iterations of the inner loop\\
+\code{dp\_memoized} & distinct states $(i,t)$ computed ($\le n(T+1)$)\\
+\code{greedy} & comparisons of the merge sort plus one step per module scanned\\
+\code{greedy\_with\_best\_item} & as \code{greedy}, plus $n$ steps to find the best single module\\
+\code{branch\_and\_bound} & nodes visited, plus steps spent computing upper bounds, plus sort comparisons\\
+\code{meet\_in\_the\_middle} & subset entries generated, merge comparisons and pointer steps\\
+\code{fptas} & cells of the profit table\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Pseudocode}
+
+\SetKwProg{Proc}{Procedure}{}{}
+\newcommand{\FExplore}{\mathrm{Explore}}
+\newcommand{\FBest}{\mathrm{Best}}
+\newcommand{\FUB}{\mathrm{UpperBound}}
+\newcommand{\FSubsets}{\mathrm{Subsets}}
+
+\begin{algorithm}[htbp]
+\caption{Exhaustive DFS with pruning and backtracking (\code{exhaustive\_dfs})}\label{alg:dfs}
+\KwIn{modules $(w_i,v_i)$, $i=1..n$; budget $T$}
+\KwOut{best score $best$ and the selected modules $bestSet$}
+$best \leftarrow 0$;\quad $chosen \leftarrow [\,]$;\quad $bestSet \leftarrow [\,]$\;
+\Proc{$\FExplore(i,u,s)$}{
+  \If{$s>best$}{$best\leftarrow s$;\quad $bestSet\leftarrow \mathrm{copy}(chosen)$\;}
+  \lIf{$i=n$}{\Return}
+  \If{$u+w_{i+1}\le T$}{
+    append $i+1$ to $chosen$\;
+    $\FExplore(i+1,\ u+w_{i+1},\ s+v_{i+1})$\;
+    remove $i+1$ from $chosen$ \Comment*{backtracking}
+  }
+  $\FExplore(i+1,\ u,\ s)$\;
+}
+$\FExplore(0,0,0)$\;
+\Return $best,\ bestSet$\;
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Dynamic programming: table and reconstruction (\code{dp\_table})}\label{alg:dp}
+\KwIn{modules $(w_i,v_i)$, $i=1..n$; budget $T$}
+\KwOut{optimal score $D[n][T]$ and the selected modules $chosen$}
+\lFor{$t\leftarrow 0$ \KwTo $T$}{$D[0][t]\leftarrow 0$}
+\For{$i\leftarrow 1$ \KwTo $n$}{
+  \For{$t\leftarrow 0$ \KwTo $T$}{
+    $D[i][t]\leftarrow D[i-1][t]$ \Comment*{do not take module $i$}
+    \If{$w_i\le t$ \textbf{and} $D[i-1][t-w_i]+v_i>D[i][t]$}{
+      $D[i][t]\leftarrow D[i-1][t-w_i]+v_i$ \Comment*{take module $i$}
+    }
+  }
+}
+$t\leftarrow T$;\quad $chosen\leftarrow[\,]$\;
+\For{$i\leftarrow n$ \textbf{down to} $1$}{
+  \If{$D[i][t]\neq D[i-1][t]$}{prepend $i$ to $chosen$;\quad $t\leftarrow t-w_i$\;}
+}
+\Return $D[n][T],\ chosen$\;
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Dynamic programming with memoization (\code{dp\_memoized})}\label{alg:memo}
+\KwIn{modules $(w_i,v_i)$, $i=1..n$; budget $T$}
+\KwOut{optimal score $\FBest(0,T)$}
+$memo\leftarrow$ empty map\;
+\Proc{$\FBest(i,t)$}{
+  \lIf{$i=n$}{\Return $0$}
+  \lIf{$(i,t)\in memo$}{\Return $memo[(i,t)]$}
+  $r\leftarrow\FBest(i+1,t)$\;
+  \lIf{$w_{i+1}\le t$}{$r\leftarrow\max\{r,\ v_{i+1}+\FBest(i+1,t-w_{i+1})\}$}
+  $memo[(i,t)]\leftarrow r$;\quad \Return $r$\;
+}
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Greedy by ratio, with the best-single-module variant (\code{greedy}, \code{greedy\_with\_best\_item})}\label{alg:greedy}
+\KwIn{modules $(w_i,v_i)$, $i=1..n$; budget $T$}
+\KwOut{score $G$ (greedy) and score $\max\{G,M\}$ (variant)}
+$order\leftarrow$ \textsc{MergeSort}(modules, $i$ before $j$ iff $v_iw_j>v_jw_i$)\;
+$u\leftarrow 0$;\quad $G\leftarrow 0$\;
+\ForEach{$i$ \textbf{in} $order$}{
+  \If{$u+w_i\le T$}{$u\leftarrow u+w_i$;\quad $G\leftarrow G+v_i$\;}
+}
+$M\leftarrow\max\{v_i : w_i\le T\}$ \Comment*{variant only}
+\Return $G$ \textbf{and} $\max\{G,M\}$\;
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Branch and Bound with the fractional bound (\code{branch\_and\_bound})}\label{alg:bb}
+\KwIn{modules $(w_i,v_i)$, $i=1..n$; budget $T$}
+\KwOut{optimal score $best$}
+$o\leftarrow$ modules sorted by decreasing $v/w$;\quad $best\leftarrow0$;\quad $chosen\leftarrow[\,]$\;
+\Proc{$\FUB(k,u,s)$}{
+  $room\leftarrow T-u$;\quad $ub\leftarrow s$\;
+  \For{$j\leftarrow k+1$ \KwTo $n$}{
+    \lIf{$w_{o_j}\le room$}{$room\leftarrow room-w_{o_j}$;\quad $ub\leftarrow ub+v_{o_j}$}
+    \lElse{\Return $ub+\lfloor room\cdot v_{o_j}/w_{o_j}\rfloor$}
+  }
+  \Return $ub$\;
+}
+\Proc{$\FExplore(k,u,s)$}{
+  $best\leftarrow\max\{best,s\}$\;
+  \lIf{$k=n$ \textbf{or} $\FUB(k,u,s)\le best$}{\Return}
+  \If{$u+w_{o_{k+1}}\le T$}{take $o_{k+1}$, $\FExplore(k+1,\ u+w_{o_{k+1}},\ s+v_{o_{k+1}})$, undo\;}
+  $\FExplore(k+1,\ u,\ s)$\;
+}
+$\FExplore(0,0,0)$\;
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{Meet-in-the-Middle (\code{meet\_in\_the\_middle})}\label{alg:mitm}
+\KwIn{modules $(w_i,v_i)$, $i=1..n$; budget $T$}
+\KwOut{optimal score $best$}
+split the modules into halves $A$ (first $\lfloor n/2\rfloor$) and $B$ (the rest)\;
+\Proc{$\FSubsets(H)$}{
+  $L\leftarrow[(0,0)]$ \Comment*{pairs (time, score), sorted by time}
+  \ForEach{module $j$ \textbf{in} $H$}{
+    $L'\leftarrow[(t+w_j,\ s+v_j) : (t,s)\in L,\ t+w_j\le T]$\;
+    $L\leftarrow\textsc{Merge}(L,L')$ by time \Comment*{stays sorted}
+  }
+  \Return $L$\;
+}
+$L_A\leftarrow\FSubsets(A)$;\quad $L_B\leftarrow\FSubsets(B)$\;
+$bestB[j]\leftarrow$ largest score among $L_B[0..j]$;\quad $p\leftarrow |L_B|-1$;\quad $best\leftarrow0$\;
+\ForEach{$(t,s)$ \textbf{in} $L_A$ \textnormal{(increasing $t$)}}{
+  \While{time of $L_B[p]$ $+\ t>T$}{$p\leftarrow p-1$\;}
+  $best\leftarrow\max\{best,\ s+bestB[p]\}$\;
+}
+\Return $best$\;
+\end{algorithm}
+
+\begin{algorithm}[htbp]
+\caption{FPTAS by profit scaling (\code{fptas})}\label{alg:fptas}
+\KwIn{modules $(w_i,v_i)$ with $w_i\le T$; budget $T$; accuracy $\varepsilon$}
+\KwOut{a selection with score $\ge(1-\varepsilon)\,\OPT$}
+$K\leftarrow\varepsilon\cdot v_{\max}/n$;\quad $v'_i\leftarrow\lfloor v_i/K\rfloor$;\quad $S\leftarrow\sum_i v'_i$\;
+$W[0][0]\leftarrow0$;\quad $W[0][s]\leftarrow\infty$ for $s>0$ \Comment*{$W[k][s]$: least time to reach scaled score $s$}
+\For{$k\leftarrow1$ \KwTo $n$}{
+  \For{$s\leftarrow0$ \KwTo $S$}{
+    $W[k][s]\leftarrow W[k-1][s]$\;
+    \If{$s\ge v'_k$ \textbf{and} $W[k-1][s-v'_k]+w_k\le T$ \textbf{and} $W[k-1][s-v'_k]+w_k<W[k][s]$}{
+      $W[k][s]\leftarrow W[k-1][s-v'_k]+w_k$\;
+    }
+  }
+}
+$s^*\leftarrow\max\{s : W[n][s]\le T\}$;\quad reconstruct the modules as in Algorithm~\ref{alg:dp}\;
+\Return the selected modules and the sum of their \emph{original} scores\;
+\end{algorithm}
+
+\FloatBarrier
+\subsection{Test instance}\label{sec:testinstance}
+
+The test instance models a learner with a budget of $T=10$ hours choosing among six modules (Table~\ref{tab:instance}). It is defined in \code{test\_instance()} and executed by the block \code{demo} of \code{experiment.py}.
+
+\begin{table}[h]
+\centering
+\caption{Test instance ($T=10$ h).}\label{tab:instance}
+\small
+\begin{tabular}{@{}c l r r r@{}}
+\toprule
+$i$ & Module & Hours $w_i$ & Score $v_i$ & Ratio $v_i/w_i$\\
+\midrule
+1 & Programming Logic & 1 & 10 & 10.0\\
+2 & Python Basics & 5 & 46 & 9.2\\
+3 & Data Structures & 5 & 45 & 9.0\\
+4 & Databases & 2 & 15 & 7.5\\
+5 & Networking & 3 & 20 & 6.7\\
+6 & Git & 1 & 6 & 6.0\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:dptable} shows the table $D[i][t]$ produced by the code. The shaded cells are visited by the reconstruction, which starts at $D[6][10]=91$. At $i=6$, $5$ and $4$ the value does not change when module $i$ is removed ($D[i][10]=D[i-1][10]$), so Git, Networking and Databases are not taken. At $i=3$, $D[3][10]=91\neq D[2][10]=56$: Data Structures is taken and the remaining time is $10-5=5$. At $i=2$, $D[2][5]=46\neq D[1][5]=10$: Python Basics is taken and the remaining time is $0$. The optimal selection is therefore modules 2 and 3, using 10 hours and scoring 91.
+
+\begin{table}[h]
+\centering
+\caption{Dynamic-programming table for the test instance. Rows: modules considered; columns: available time $t$. Shaded: cells visited by the reconstruction; bold: modules taken.}\label{tab:dptable}
+\small
+\input{sections/dp_table}
+\end{table}
+
+The greedy algorithm sorts the modules by ratio (1, 2, 3, 4, 5, 6), takes modules 1, 2, 4 and 6 (9 hours, score 77), and skips 3 and 5 because they no longer fit. It ends 15.4\% below the optimum because module 1, with the highest ratio, uses an hour that prevents the ideal pair from fitting. Table~\ref{tab:instance-results} lists the result of every algorithm; all exact algorithms return 91.
+
+\begin{table}[h]
+\centering
+\caption{Results on the test instance (output of \code{python experiment.py --only demo}).}\label{tab:instance-results}
+\small
+\begin{tabular}{@{}l r l r r@{}}
+\toprule
+Algorithm & Score & Selected modules & Hours used & Operations\\
+\midrule
+Exhaustive DFS & 91 & 2, 3 & 10 & 93\\
+DP (table) & 91 & 2, 3 & 10 & 66 ($=6\times11$)\\
+DP (vector) & 91 & --- (value only) & --- & 49\\
+DP (memoized) & 91 & 2, 3 & 10 & 32 states\\
+Branch and Bound & 91 & 2, 3 & 10 & 70\\
+Meet-in-the-Middle & 91 & 2, 3 & 10 & 46\\
+FPTAS ($\varepsilon=0.1$) & 91 & 2, 3 & 10 & 1,098\\
+Greedy & 77 & 1, 2, 4, 6 & 9 & 13\\
+Greedy + best item & 77 & 1, 2, 4, 6 & 9 & 19\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The memoized DP visits 32 states, well below the 66 cells of the table and the 93 nodes of the DFS, which illustrates the link between the three algorithms discussed in Section~\ref{sec:design-bridge}. An \emph{adversarial instance} shows that the greedy can be arbitrarily bad: with $T=1000$, a short module with 1 hour and 2 points (ratio 2.0) and a long module with 1000 hours and 1000 points (ratio 1.0). The greedy takes the short module and obtains 2 (a gap of 99.8\%), after which the long module no longer fits; the variant with the best single module, the DP and all exact algorithms obtain 1000.
+
+\subsection{Decisions and missing specifications}\label{sec:decisions}
+
+The assignment asks for the decisions made and for any detail missing from its description. Ours were:
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=2pt]
+\item \textbf{Relaxation without prerequisites.} The article works on a course graph; we treat modules as independent (0/1 knapsack). The version with precedence (Section~\ref{sec:background}) is left as future work. The prerequisite-graph DFS is provided separately in \code{graph\_dfs.py}.
+\item \textbf{Time and score are inputs.} We do not reimplement how the article estimates module time and score; we take them as given integers.
+\item \textbf{Integer time unit.} Times are positive integers (minutes or blocks of 15~minutes). This is required by the DP table and is the origin of its pseudo-polynomial nature.
+\item \textbf{Details a DFS implementation must fix.} State restoration is explicit (the \texttt{pop} after the recursive call); the best selection is recorded at every node; ties keep the first optimum found (strict comparison); modules are visited in input order (only Branch and Bound uses ratio order).
+\item \textbf{Own merge sort.} We implement a stable merge sort instead of the built-in \code{sorted}. This keeps the greedy at $\Theta(n\log n)$ in every case (Python's Timsort runs in $\mathcal{O}(n)$ on already sorted input, which would blur the best-case analysis) and respects the rule against relying on library implementations.
+\item \textbf{Exact arithmetic.} Ratios are compared by cross-multiplication and scores are integers, so there are no floating-point ties in the exact algorithms; only the FPTAS uses a floating-point scaling constant.
+\item \textbf{Counters and timing.} Conclusions rely on operation counters (Table~\ref{tab:ops}); wall-clock time is the median of three executions (one execution when the DFS exceeds 18 modules).
+\item \textbf{DFS size limit.} The DFS is run only up to $n=22$ in the timing experiments, because its cost doubles with each additional module.
+\item \textbf{Instance families.} The strongly correlated family uses the constant $R/2$ instead of the $R/10$ usual in the literature, to make the effect clearly visible with small ranges; this is a deviation we state explicitly (Section~\ref{sec:method}).
+\end{enumerate}

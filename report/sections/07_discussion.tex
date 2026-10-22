@@ -1,0 +1,59 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{Which algorithm is the most suitable for learning-path selection?}
+
+Our analysis and experiments support the choice of \textbf{dynamic programming} as the most suitable algorithm for this scenario, for six reasons.
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=3pt]
+\item \textbf{The answer must be optimal.} A recommendation that wastes part of the learner's time is a poor recommendation. The greedy lost up to 54.5\% of the score on small random instances, 15.4\% on the test instance and 99.8\% on the adversarial instance (Section~\ref{sec:exp-greedy}); the DP never loses anything (Lemma~\ref{lem:rec}).
+\item \textbf{The parameter that makes the DP expensive is small in this domain.} The study load of a learner is expressed in minutes or blocks of a few minutes, so $T$ stays in the low thousands. With 600 modules and $T=3{,}060$ the DP took 0.37~s in pure Python (Table~\ref{tab:scale}). The pseudo-polynomial nature (Proposition~\ref{prop:pseudo}) becomes a problem only if time is measured in very fine units, as in the experiment of $T\approx10^5$, where the cost reaches $1.8\times10^6$ operations for just 18 modules.
+\item \textbf{The cost is predictable.} The DP performs exactly $n(T+1)$ operations on every instance (Theorem~\ref{thm:dp}), whereas Branch and Bound varied between 1,377 and 44,475 operations at the same $n$ depending on the family (Table~\ref{tab:families}). For a system that answers learners interactively, a worst-case guarantee is worth more than a better average.
+\item \textbf{Realistic data are correlated.} Longer modules plausibly carry more content and a higher score. The strongly correlated family is exactly where the greedy loses the most on average and where Branch and Bound becomes 11 to 15 times more expensive, while the DP is unaffected.
+\item \textbf{One table answers every budget.} Since $D[i][t]$ is defined for \emph{at most} $t$ time units, the last row gives the optimal score for any study load up to $T$, and the reconstruction works for each of them. No other algorithm studied provides this without being run again, and it answers the natural question ``what if I only had eight hours?''.
+\item \textbf{It is simple to prove, to explain and to extend.} The optimal substructure is short (Lemma~\ref{lem:rec}), the table is visual, and the reconstruction explains why each module was selected, which is valuable in an educational recommender.
+\end{enumerate}
+
+\subsection{When another algorithm wins}
+
+The DP is not the best algorithm in every regime, and the experiments show it. Table~\ref{tab:decision} summarizes which algorithm to choose depending on the situation.
+
+\begin{table}[h]
+\centering
+\caption{Choice of algorithm by regime.}\label{tab:decision}
+\small
+\begin{tabularx}{\linewidth}{@{}X X@{}}
+\toprule
+Situation & Most suitable algorithm\\
+\midrule
+Small integer $T$ (minutes or hours), $n$ up to thousands, an exact answer and a guarantee are required & Dynamic programming\\
+Immediate answer, many modules that are small relative to $T$, a loss of 1 to 3\% is acceptable & Greedy (preferably with the best single module, which provides the 1/2 guarantee)\\
+Time measured in very fine units ($T$ in the millions) and $n$ up to about 40 & Meet-in-the-Middle, whose cost does not depend on $T$\\
+Both $n$ and $T$ enormous and an error $\varepsilon$ is tolerated & FPTAS (in theory; at our scales it did not pay off)\\
+Easy instances and moderate $n$, average speed matters more than a worst-case guarantee & Branch and Bound (in our tests it needed fewer operations than the DP for $n\le40$)\\
+Prerequisites between modules (graph) & Path enumeration as in the article, or integer programming; tree-shaped precedence admits specific DPs; on general DAGs the problem is NP-hard \cite{samphaiboon2000}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A point that deserves honesty: in our experiments Branch and Bound performed fewer operations than the DP for every instance size tested ($n\le40$), even on strongly correlated instances. We nevertheless consider the DP more suitable because Branch and Bound offers no polynomial guarantee, its cost fluctuates strongly with the data (and the literature reports instances on which it explodes \cite{pisinger2005}), and our largest instances have only 40 modules. If an application is known to produce easy instances with moderate $n$, Branch and Bound is a legitimate choice.
+
+\subsection{Agreement with the literature}
+
+The experiments reproduce, on our implementation, the main statements of the theory presented in Section~\ref{sec:background}:
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt]
+\item The DP is pseudo-polynomial: its operation count is exactly $n(T+1)$ and grows with the magnitude of $T$ alone \cite{garey1979,kellerer2004}.
+\item Meet-in-the-Middle grows as $2^{n/2}$ and does not depend on $T$ \cite{horowitz1974}.
+\item Strongly correlated instances are harder for branch-and-bound algorithms, while DP is insensitive to the correlation \cite{pisinger2005}.
+\item The ratio-based greedy has no constant guarantee, but the variant with the best single module guarantees one half of the optimum \cite{kellerer2004}; the FPTAS cost grows with $1/\varepsilon$ \cite{ibarra1975,lawler1979}.
+\item The exhaustive search of the article is exponential in the size of the graph (Section~\ref{sec:exp-graph}), which explains why a reasonable system either limits the size of the course graph or uses a more elaborate method \cite{nabizadeh2017rutico}.
+\end{itemize}
+
+\subsection{Threats to validity}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{Synthetic instances.} Scores and times are generated by three families; no real course data were used. The conclusion about correlation rests on the hypothesis that longer modules score higher.
+\item \textbf{Strongly correlated constant.} We use $R/2$ instead of the $R/10$ common in the literature (Section~\ref{sec:method}), which may exaggerate the greedy gap relative to standard benchmarks.
+\item \textbf{Size of the instances.} The DFS was run up to $n=22$ and Branch and Bound and Meet-in-the-Middle up to $n=40$ (in the family experiment); results for larger $n$ rely on the theory and on extrapolation.
+\item \textbf{Python and one machine.} Absolute times depend on the interpreter and hardware; conclusions rely on operation counters. The counters of different algorithms are not strictly commensurable (a node of Branch and Bound is more expensive than a cell of the DP), although we included the cost of the bound computation to reduce this bias.
+\item \textbf{Few instances per point.} Averages use 5 to 30 instances per point, so small differences should not be over-interpreted.
+\end{itemize}

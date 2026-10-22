@@ -1,0 +1,125 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------- packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage[scaled=.90]{helvet}
+\usepackage{courier}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs,array,tabularx,multirow,colortbl}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{placeins}
+\usepackage{fancyhdr}
+\usepackage[ruled,vlined,linesnumbered,noend]{algorithm2e}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+\linespread{1.08}
+\setlength{\parskip}{0.4em}
+\setlength{\parindent}{0pt}
+\captionsetup{font=small,labelfont=bf}
+\SetKwComment{Comment}{$\triangleright$\ }{}
+\SetCommentSty{textit}
+\renewcommand{\arraystretch}{1.12}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Learning-Path Optimization as a 0/1 Knapsack Problem}
+\fancyhead[R]{\small Design and Complexity of Algorithms}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+% ---------------------------------------------------------------- theorem environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+% ---------------------------------------------------------------- shortcuts
+\renewcommand{\_}{\textunderscore\hspace{0pt}}  % allow line breaks after underscores in file names
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\OPT}{\mathrm{OPT}}
+\newcommand{\bigO}{\mathcal{O}}
+
+\begin{document}
+
+% ================================================================= COVER
+\begin{titlepage}
+\centering
+{\large Universidade de Bras\'ilia (UnB)\par}
+{\large Departamento de Ci\^encia da Computa\c{c}\~ao\par}
+\vspace{0.6cm}
+{\normalsize Design and Complexity of Algorithms\par}
+{\normalsize Professor Marcelo Antonio Marotta\par}
+{\normalsize Final Project\par}
+\vspace{2.2cm}
+{\LARGE\bfseries Learning-Path Optimization as a 0/1 Knapsack Problem\par}
+\vspace{0.4cm}
+{\Large Dynamic Programming versus the Exhaustive DFS of RUTICO and Greedy Selection\par}
+\vspace{1.4cm}
+\begin{tabular}{rl}
+\textbf{Problem:} & Selecting the set of learning modules that maximizes the\\
+& learning score within a study-time budget\\
+& (0/1 Knapsack Problem)\\[4pt]
+\textbf{Article studied:} & RUTICO: Recommending Successful Learning Paths\\
+& Under Time Constraints (UMAP 2017)\\[4pt]
+\textbf{Algorithms:} & Exhaustive DFS (authors), Dynamic Programming\\
+& (proposal), Greedy by score/time ratio (comparison),\\
+& plus Branch and Bound, Meet-in-the-Middle and FPTAS\\
+\end{tabular}
+\vspace{1.6cm}
+
+{\large\bfseries Group members\par}
+\vspace{0.3cm}
+\begin{tabular}{ll}
+{[Member Name 1]} & {[Student ID 1]}\\
+{[Member Name 2]} & {[Student ID 2]}\\
+{[Member Name 3]} & {[Student ID 3]}\\
+{[Member Name 4]} & {[Student ID 4]}\\
+\end{tabular}
+\vfill
+{\normalsize Bras\'ilia, October 2026\par}
+\end{titlepage}
+
+% ================================================================= ABSTRACT
+\pagenumbering{roman}
+\begin{abstract}
+\noindent Choosing which learning modules a student should study within a limited amount of time is a combinatorial optimization problem that arises in e-learning recommender systems. We model it as the 0/1 Knapsack Problem and study it through the article \emph{RUTICO: Recommending Successful Learning Paths Under Time Constraints}, whose solution enumerates the feasible paths of a course graph with a depth-first search (DFS). We analyze the design and the complexity of three algorithmic strategies: the exhaustive DFS with time pruning used by the authors, a Dynamic Programming (DP) algorithm that we propose, and a greedy heuristic based on the score/time ratio. Three further algorithms (Branch and Bound, Meet-in-the-Middle and an FPTAS) are used as additional points of comparison. We prove the correctness and derive the best-, worst- and average-case behavior of each algorithm, and we validate the analysis with a hand-written Python implementation and with experiments that count elementary operations, so that conclusions do not depend on the hardware. The DFS generates exactly $2^{n+1}-1$ nodes in its worst case, whereas the DP performs exactly $n(T+1)$ operations on any instance and is pseudo-polynomial; the greedy heuristic is fast but loses up to 54.5\% of the optimal score on our small random instances and 99.8\% on an adversarial instance. We show that DP is the most suitable algorithm for the learning-path scenario, since it is exact, has a predictable cost, and the budget $T$ is small in practice, and we discuss the regimes in which the alternative algorithms win. All code, data and plots are available in the accompanying source package.
+
+\vspace{0.4cm}
+\noindent\textbf{Keywords:} knapsack problem, dynamic programming, depth-first search, greedy algorithms, pseudo-polynomial time, learning paths, algorithm analysis.
+\end{abstract}
+
+\clearpage
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01_introduction}
+\input{sections/02_background}
+\input{sections/03_design}
+\input{sections/04_implementation}
+\input{sections/05_complexity}
+\input{sections/06_experiments}
+\input{sections/07_discussion}
+\input{sections/08_members_conclusion}
+
+% ================================================================= REFERENCES
+\input{sections/09_references}
+
+\appendix
+\input{sections/10_appendix}
+
+\end{document}

@@ -1,0 +1,90 @@
+\section{Theoretical Background}\label{sec:background}
+
+This section presents the concepts on which the rest of the report relies. Each subsection ends by indicating the code module in which the concept materializes, so that the theory and the implementation can be read side by side (a summary is given in Table~\ref{tab:theory-code}).
+
+\subsection{Learning-path optimization in e-learning}
+
+A learning path is the implementation of a curriculum design: a set of learning activities that helps a user achieve particular learning goals. Because learners differ in their limitations, backgrounds and goals, personalizing these paths became a significant research task, and the survey of Nabizadeh et al.\ organizes the methods, the parameters used for personalization and the evaluation approaches of this area \cite{nabizadeh2020survey}. Available study time is one of the limitations a learner may have, and it is the one that RUTICO addresses directly \cite{nabizadeh2017rutico}: the system looks for paths whose total duration respects the learner's time restriction and whose score is maximal.
+
+When modules have prerequisites, the feasible selections form a structure over a directed acyclic graph (DAG). The corresponding optimization problem is the \emph{precedence-constrained knapsack problem} (PCKP), in which a module can be adopted only if all its predecessors are in the knapsack \cite{samphaiboon2000}. PCKP is NP-hard because it contains the plain knapsack as the special case without precedence, and dynamic programming algorithms for it are known to solve small instances to optimality \cite{samphaiboon2000}. Ignoring prerequisites therefore yields a strictly simpler problem whose structure is completely understood, and which is the subject of this work. The graph search of RUTICO itself is represented in our code by \code{graph\_dfs.py}.
+
+\subsection{The 0/1 knapsack problem}\label{sec:knapsack}
+
+Definition~\ref{def:lps} can be written as the integer linear program
+\begin{equation}
+\max \sum_{i=1}^{n} v_i x_i \quad \text{s.t.}\quad \sum_{i=1}^{n} w_i x_i \le T,\quad x_i \in \{0,1\},
+\label{eq:ilp}
+\end{equation}
+where $x_i=1$ means that module $i$ is selected. Without loss of generality we assume $w_i \le T$ for every module, since a module that does not fit alone can never be part of a solution.
+
+\paragraph{Computational complexity.} The decision version of the problem (is there a subset with $v(S)\ge V$ and $w(S)\le T$?) is NP-complete; the knapsack problem is among the problems whose NP-completeness was established by Karp \cite{karp1972} and it is a standard example in the theory of NP-completeness \cite{garey1979}. No polynomial-time algorithm is known for it, but it is NP-hard only in the \emph{weak} sense: there are algorithms whose running time is polynomial in the \emph{numeric value} of the input, called pseudo-polynomial algorithms \cite{garey1979,kellerer2004}. The input of Definition~\ref{def:lps} is encoded with $\Theta\big(n \log(T+\max_i w_i+\max_i v_i)\big)$ bits, so a running time such as $\Theta(nT)$ is exponential in the number of bits used to write $T$, even though it is linear in the number $T$ itself. This distinction is the key to understanding both the efficiency of dynamic programming in practice and its limitation (Sections~\ref{sec:design} and~\ref{sec:experiments}). Despite its NP-hardness, many knapsack instances are easy for modern algorithms, and Pisinger studies which classes of instances remain hard \cite{pisinger2005}.
+
+\paragraph{Fractional relaxation.} If modules could be taken partially ($x_i\in[0,1]$), the problem would be solved optimally by a greedy rule: sort the modules by decreasing ratio $v_i/w_i$ and take them in this order until the first module that does not fit, of which only a fraction is taken. This observation, due to Dantzig \cite{dantzig1957}, has two consequences that we exploit: it gives an upper bound on the 0/1 optimum (used by Branch and Bound), and it explains both why a ratio-based greedy is attractive and why it fails when items are indivisible.
+
+\subsection{Algorithm design paradigms}
+
+\subsubsection{Backtracking and depth-first search}
+
+Backtracking systematically builds candidate solutions and abandons (prunes) a partial candidate as soon as it cannot lead to a feasible solution \cite{golomb1965}. It is implemented with a depth-first traversal of the \emph{decision tree}, in which each level corresponds to a decision (here: include or exclude one module) and each leaf to a complete selection. Depth-first search itself is a linear-time graph traversal \cite{tarjan1972,cormen2022}. A recursive implementation must \emph{restore} the state when it returns from a recursive call (the backtracking step), otherwise decisions of one branch leak into the other. For the knapsack, the tree has $2^n$ leaves; pruning the ``include'' branch whenever the time budget would be exceeded removes infeasible subtrees but does not change the exponential worst case. This is the technique of the authors' solution (\code{dfs.py}, \code{graph\_dfs.py}).
+
+\subsubsection{Dynamic programming}
+
+Dynamic programming, introduced by Bellman \cite{bellman1957}, solves an optimization problem by combining solutions of subproblems and is applicable when the problem has two properties \cite{cormen2022,kleinberg2006}:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=1pt]
+\item \textbf{Optimal substructure:} an optimal solution contains optimal solutions of its subproblems (Bellman's principle of optimality).
+\item \textbf{Overlapping subproblems:} the same subproblems are needed repeatedly, so computing each one once and reusing its value saves work.
+\end{itemize}
+
+There are two equivalent implementations. \emph{Bottom-up} fills a table in an order that guarantees that dependencies are ready; \emph{top-down} keeps the recursive formulation and caches results, a technique known as memoization, named after Michie's ``memo functions'' \cite{michie1968}. Both compute the same values; the top-down version computes only the states that are actually reachable, at the price of recursion overhead. When each row of the table depends only on the previous one, the table can be compressed into a single vector, reducing the space. Dynamic programming is the proposal of this project (\code{dp.py}: \code{dp\_table}, \code{dp\_vector}, \code{dp\_memoized}).
+
+\subsubsection{Greedy strategy}
+
+A greedy algorithm builds a solution by repeatedly making the locally best choice. It is correct when the problem has the greedy-choice property and optimal substructure \cite{cormen2022}; the fractional knapsack has it (Section~\ref{sec:knapsack}), the 0/1 knapsack does not. Applied to the 0/1 knapsack, the ratio-based greedy is fast but offers no optimality guarantee, and it can be arbitrarily bad (Proposition~\ref{prop:greedy-unbounded}). A simple modification, returning the better of the greedy solution and the best single module, guarantees at least half of the optimum \cite{kellerer2004} (Proposition~\ref{prop:greedy-half}). The greedy strategy is our mandatory comparison algorithm (\code{greedy.py}); it relies on a sort, which we implement as a merge sort (divide and conquer, \code{sorting.py}).
+
+\subsubsection{Branch and Bound}
+
+Branch and Bound, proposed by Land and Doig for discrete programming \cite{land1960}, explores the decision tree like the DFS but discards a subtree when an \emph{upper bound} on its best possible value does not exceed the best complete solution already found. For the knapsack, the natural bound is the fractional relaxation of Dantzig \cite{dantzig1957}, used in the first branch-and-bound algorithms for the problem \cite{kolesar1967,horowitz1974}. The worst case remains exponential, but the pruning can make the search very fast on instances for which the bound is tight (\code{branch\_and\_bound.py}).
+
+\subsubsection{Meet-in-the-Middle}
+
+Horowitz and Sahni showed how to solve the knapsack problem in $\bigO(2^{n/2})$ time by splitting the set of items into two halves, enumerating the subsets of each half, and combining them \cite{horowitz1974}. Its cost does not depend on the numeric value of $T$, which makes it attractive when $T$ is very large and $n$ is moderate (\code{meet\_in\_the\_middle.py}).
+
+\subsubsection{Approximation schemes}
+
+A \emph{fully polynomial-time approximation scheme} (FPTAS) returns, for any $\varepsilon>0$, a solution of value at least $(1-\varepsilon)\,\OPT$ in time polynomial in both $n$ and $1/\varepsilon$ \cite{vazirani2001,williamson2011}. The knapsack problem admits an FPTAS, obtained by scaling down the values and solving the scaled instance exactly with a dynamic program over the \emph{profit} \cite{ibarra1975,lawler1979}. It trades exactness for independence from $T$ (\code{fptas.py}).
+
+\subsection{Fundamentals of complexity analysis}
+
+We use the asymptotic notation $\bigO$, $\Omega$ and $\Theta$ \cite{cormen2022}. The \emph{best case} and the \emph{worst case} of an algorithm are the minimum and the maximum running time over all inputs of a given size $n$; the \emph{average case} is the expected running time under an input distribution, which is rarely available in closed form. For this reason we complement the analytical best and worst cases with an \emph{empirical} average case measured on random instances. Two parameters describe the input size of our problem: the number of modules $n$ and the budget $T$; the algorithms studied depend on $n$ alone, on $n$ and $T$, or on $n$ and the instance structure.
+
+Recursive algorithms are analyzed with recurrences such as $T(n)=2T(n/2)+\Theta(n)$, whose solution is given by the master theorem \cite{cormen2022}. Following the tradition of Knuth \cite{knuth1998}, we also analyze algorithms by counting how often their elementary steps are executed. This is the reason why every algorithm in our implementation reports an operation counter: counters are deterministic and independent of the machine, whereas wall-clock time is not. Wall-clock times are reported only as complementary evidence.
+
+\subsection{Benchmark instance families}
+
+The behavior of knapsack algorithms depends strongly on the relation between times (weights) and scores (profits) \cite{pisinger2005,kellerer2004}. In the standard generators, with $R$ the range of the weights, the \emph{uncorrelated} family draws $v_i$ independently of $w_i$; the \emph{weakly correlated} family draws $v_i$ near $w_i$; and the \emph{strongly correlated} family sets $v_i = w_i + c$. Pisinger identifies instance classes that are hard for branch-and-bound algorithms, among them strongly correlated ones, as well as instances with large coefficients that challenge dynamic programming \cite{pisinger2005}. We adopt three families with these definitions in \code{instances.py} (Section~\ref{sec:method}). In e-learning, the correlated families are also the plausible ones: our working hypothesis is that longer modules tend to carry more content and therefore a higher score.
+
+\subsection{From theory to code}
+
+\begin{table}[h]
+\centering
+\caption{Correspondence between theoretical concepts and code modules.}\label{tab:theory-code}
+\small
+\begin{tabularx}{\linewidth}{@{}X l l@{}}
+\toprule
+Concept & Module (function) & Complexity\\
+\midrule
+Decision tree, pruning, backtracking & \code{dfs.py} (\code{exhaustive\_dfs}) & $\Theta(n)$ to $\Theta(2^n)$\\
+Graph search with backtracking & \code{graph\_dfs.py} (\code{dfs\_paths}) & up to $2^{n-1}$ paths\\
+Optimal substructure, bottom-up table & \code{dp.py} (\code{dp\_table}) & $\Theta(nT)$\\
+Space optimization & \code{dp.py} (\code{dp\_vector}) & $\Theta(nT)$ time, $\Theta(T)$ space\\
+Memoization (top-down) & \code{dp.py} (\code{dp\_memoized}) & $\le n(T+1)$ states\\
+Greedy strategy and 1/2-approximation & \code{greedy.py} (\code{greedy}, \code{greedy\_with\_best\_item}) & $\Theta(n\log n)$\\
+Divide and conquer (merge sort) & \code{sorting.py} (\code{merge\_sort}) & $\Theta(n\log n)$\\
+Branch and Bound with Dantzig bound & \code{branch\_and\_bound.py} & $\bigO(n2^n)$\\
+Meet-in-the-Middle & \code{meet\_in\_the\_middle.py} & $\bigO(2^{n/2})$\\
+FPTAS & \code{fptas.py} & $\bigO(n^3/\varepsilon)$\\
+Instance families & \code{instances.py} & ---\\
+\bottomrule
+\end{tabularx}
+\end{table}

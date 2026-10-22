@@ -1,0 +1,40 @@
+\section{Members and Activities}\label{sec:members}
+
+\begin{table}[h]
+\centering
+\caption{Activities carried out by each group member.}\label{tab:members}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Member & Activities\\
+\midrule
+{[Member Name 1]} & Study of the article (RUTICO) and of the course graph; implementation of \code{dfs.py} and \code{graph\_dfs.py}; analysis of the DFS (Sections~\ref{sec:design-dfs} and~\ref{sec:exp-graph}).\\
+{[Member Name 2]} & Design and implementation of the dynamic programming (\code{dp.py}); proofs of correctness and complexity of the DP (Section~\ref{sec:complexity}); test instance and DP table.\\
+{[Member Name 3]} & Implementation of the greedy algorithm and of the sort (\code{greedy.py}, \code{sorting.py}); extra algorithms (\code{branch\_and\_bound.py}, \code{meet\_in\_the\_middle.py}, \code{fptas.py}); instance generators.\\
+{[Member Name 4]} & Experimental routine (\code{experiment.py}), execution of the experiments and plots; writing and integration of the report.\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+All members reviewed the whole code and the whole report, and each one is able to explain every code segment and every complexity derivation in the presentation, as required by the assignment.
+
+% INSTRUCTIONS FOR THE GROUP (not printed): replace the bracketed names and activities above with
+% the real ones. If your course policy requires declaring the use of AI tools, add a sentence here.
+
+\section{Conclusion}\label{sec:conclusion}
+
+\paragraph{General comments.} We studied the selection of learning modules under a study-time budget, modeled as the 0/1 knapsack problem, starting from the article RUTICO, whose solution is an exhaustive DFS. We showed that dynamic programming is the same search with memoization: the decision tree has $2^n$ leaves but only $n(T+1)$ distinct states. We proved the correctness and the best-, worst- and space complexity of the DFS ($\Theta(n)$ to $\Theta(2^n)$ nodes, with exactly $2^{n+1}-1$ nodes when everything fits), of the DP ($\Theta(nT)$, pseudo-polynomial) and of the greedy ($\Theta(n\log n)$, without a constant guarantee unless the best single module is considered), and of three additional algorithms. The experiments, based on hardware-independent operation counters and validated on more than a thousand random instances, confirmed each of these results. The DP is the most suitable algorithm for the learning-path scenario because it is exact, has a cost that does not depend on the data, and the budget $T$ is small in practice; the experiments also showed regimes in which Branch and Bound, Meet-in-the-Middle or the greedy are preferable.
+
+\paragraph{Main difficulties.}
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt]
+\item \textbf{The article does not use dynamic programming.} The solution of the authors is a DFS, so we had to implement it and justify the DP through its relation to the DFS (memoization) rather than assume it.
+\item \textbf{Bridging the article and the knapsack.} The article works on a graph with prerequisites; the knapsack ignores them. Deciding how to state this relaxation, and keeping a graph version (\code{graph\_dfs.py}) for the authors' setting, required care.
+\item \textbf{Fair comparisons.} Comparing algorithms with different cost structures is delicate: a Branch and Bound node costs $\bigO(n)$ because of the bound, a DP cell costs $\bigO(1)$. We counted the bound steps explicitly and we did not rely on wall-clock time alone.
+\item \textbf{Interpreting the greedy.} Its mean gap is small for large $n$ but its worst gap is large; reporting only the mean would have been misleading, and showing only the worst case would have been unfair. The families and the budget ratio were needed to tell the whole story.
+\item \textbf{Exponential experiments.} The DFS cannot be run beyond about 22 modules in reasonable time, so growth beyond that point is established by proof and extrapolation, not by measurement.
+\item \textbf{Implementation details.} Hand-writing the merge sort to keep $\Theta(n\log n)$ in every case, using integer arithmetic for ratio comparisons, and handling deep recursion in the memoized DP.
+\end{itemize}
+
+\paragraph{Limitations.} The relaxation without prerequisites, synthetic instances, a single machine and interpreter, and instance sizes up to $n=600$ (and $n=40$ for the exponential algorithms) bound the scope of the conclusions (Section~\ref{sec:discussion}).
+
+\paragraph{Future work.} (i) Incorporate prerequisites: the precedence-constrained knapsack, starting from tree-shaped prerequisites, for which dynamic programming remains applicable. (ii) Several constraints at once (time and difficulty), i.e.\ a multidimensional knapsack, where the DP table acquires one dimension per constraint. (iii) Replace the synthetic scores by the time and score estimates of the article and real course data. (iv) Evaluate larger instances with a compiled implementation, and mixed strategies such as DP for the bulk of the budget and Branch and Bound for the remainder.

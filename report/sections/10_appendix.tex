@@ -1,0 +1,33 @@
+\section{Reproducing the Results}\label{app:run}
+
+\paragraph{Requirements.} Python 3.10 or newer and matplotlib (only for the plots), on Linux:
+\begin{verbatim}
+pip install matplotlib
+python experiment.py                      # all blocks, about 1 minute
+python experiment.py --quick              # reduced version
+python experiment.py --only demo correctness
+\end{verbatim}
+The output of a full run is stored in \code{results/full\_output.txt}; the plots and the CSV files used by this report are in \code{results/}. The tables of Section~\ref{sec:experiments} are regenerated from the CSV files with \code{python report/make\_tables.py}, and the report is compiled with \code{pdflatex report.tex} (twice).
+
+\paragraph{Experiment blocks.} Table~\ref{tab:blocks} maps each block of \code{experiment.py} to its parameters, outputs and the section of this report that discusses it. The operation counts are identical in every run; wall-clock times vary with the machine.
+
+\begin{table}[h]
+\centering
+\caption{Experiment blocks, parameters and outputs.}\label{tab:blocks}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}l X p{4.4cm} l@{}}
+\toprule
+Block & Parameters (full run) & Outputs & Section\\
+\midrule
+\code{demo} & Test instance, $T=10$; adversarial instance, $T=1000$ & standard output & \ref{sec:testinstance}\\
+\code{correctness} & 1,200 random instances, $n\le16$, seed 2024, $R\in\{5,20\}$, $\rho\in\{0.1,\dots,1.0\}$ & standard output & 6.2\\
+\code{time} & $n=10,12,\dots,22$; worst case: uncorrelated, $\rho=1.0$; average: 5 instances, $\rho=0.5$ & \code{exponential\_time.csv}, \code{fig\_operations\_vs\_n.png}, \code{fig\_time\_vs\_n.png} & \ref{sec:exp-dfs}\\
+\code{scale} & $n\in\{50,100,200,400,600\}$, uncorrelated, $\rho=0.5$ & \code{scale.csv}, \code{fig\_scale.png} & 6.4\\
+\code{quality} & $n\in\{8,15,30,60\}$, 30 instances per point, $\rho\in\{0.1,0.3,0.5,0.7\}$, three families & \code{greedy\_quality.csv}, \code{fig\_greedy\_quality.png} & \ref{sec:exp-greedy}\\
+\code{pseudo} & $n=18$, factors $1,4,\dots,1024$, uncorrelated, $\rho=0.5$ & \code{pseudopolynomial.csv}, \code{fig\_pseudopolynomial.png} & 6.5\\
+\code{families} & $n\in\{20,30,40\}$, 5 instances, $R=1000$, $\rho=0.5$, uncorrelated and strongly correlated & \code{exact\_by\_family.csv}, \code{fig\_exact\_by\_family.png} & \ref{sec:exp-families}\\
+\code{fptas} & $n=30$, strongly correlated, $\varepsilon\in\{0.5,0.2,0.1,0.05\}$ & \code{fptas.csv} & 6.8\\
+\code{graph} & complete DAG, $n=4,6,\dots,16$ & \code{graph\_dfs.csv} & \ref{sec:exp-graph}\\
+\bottomrule
+\end{tabularx}
+\end{table}

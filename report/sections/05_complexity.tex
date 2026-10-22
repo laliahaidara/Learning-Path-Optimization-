@@ -1,0 +1,138 @@
+\section{Complexity Analysis}\label{sec:complexity}
+
+This section addresses assignment item 1.1.2. For each algorithm we prove its correctness (when the analysis depends on it) and derive its best-case, worst-case and space complexity; the average case is measured empirically in Section~\ref{sec:experiments}, because it depends on the distribution of the instances.
+
+\subsection{Conventions}
+
+An \emph{elementary operation} is the unit counted by the corresponding counter in Table~\ref{tab:ops}. We use $n$ for the number of modules, $T$ for the budget and $w_i\ge1$ for integer times. Inputs in which some or all modules do not fit are valid and are accepted by the code (the best case of the DFS occurs on one of them). When we reason about solutions (approximation guarantees), we assume without loss of generality that $w_i\le T$ for every $i$, since a module that does not fit alone belongs to no feasible solution and removing it changes neither $\OPT$ nor the value returned by the algorithms.
+
+\subsection{Exhaustive DFS}
+
+\begin{theorem}[Correctness of the DFS]\label{thm:dfs-correct}
+Algorithm~\ref{alg:dfs} returns the maximum score over all feasible selections.
+\end{theorem}
+\begin{proof}
+Every node $(i,u,s)$ visited corresponds to the feasible selection $chosen\subseteq\{1,\dots,i\}$ with time $u\le T$ and score $s$, because a module is appended only if $u+w_{i+1}\le T$ and is removed on backtracking. Conversely, every feasible selection $S$ is visited: following the decisions of $S$ from the root, every ``take'' decision is allowed because the accumulated time never exceeds $w(S)\le T$. The algorithm records the best score over all visited nodes, hence it returns $\max\{v(S): w(S)\le T\}$.
+\end{proof}
+
+\begin{proposition}[Number of nodes]\label{prop:dfs-nodes}
+Let $N$ be the number of nodes visited by Algorithm~\ref{alg:dfs}. Then $n+1\le N\le 2^{n+1}-1$. Moreover, $N=2^{n+1}-1$ if and only if $\sum_i w_i\le T$, and $N=n+1$ if and only if $w_i>T$ for all $i$.
+\end{proposition}
+\begin{proof}
+The ``skip'' branch is always available, so the path that skips every module exists and has $n+1$ nodes: $N\ge n+1$. Each internal node has at most two children and the depth is $n$, so the tree has at most $\sum_{k=0}^{n}2^k=2^{n+1}-1$ nodes. Equality holds exactly when every ``take'' branch is feasible, in which case $N$ satisfies $N(i)=1+2N(i+1)$ with $N(n)=1$, i.e.\ $N=2^{n+1}-1$. This happens when the path that takes all modules is feasible, which is equivalent to $\sum_i w_i\le T$ (all other paths use less time). The lower bound is attained when no ``take'' branch is ever feasible; as the all-skip path keeps the used time at zero, this means $w_i>T$ for all $i$.
+\end{proof}
+
+\paragraph{Best, worst and space.} The running time is $\Theta(N)$ (up to the cost of copying the incumbent solution, $\bigO(n)$ each time it improves; this is the usual convention for tree searches and the factor can be removed by recording the incumbent differently). Hence the best case is $\Theta(n)$ and the worst case is $\Theta(2^n)$. The recursion depth is $n+1$ and the list \emph{chosen} has at most $n$ elements, so the space is $\Theta(n)$. The average case depends on how generous the budget is; it is measured in Section~\ref{sec:exp-dfs}.
+
+\subsection{Dynamic programming}
+
+\begin{lemma}[Recurrence]\label{lem:rec}
+For all $0\le i\le n$ and $0\le t\le T$, the value $D[i][t]$ computed by Equation~\eqref{eq:prefix} equals $\max\{v(S): S\subseteq\{1,\dots,i\},\ w(S)\le t\}$.
+\end{lemma}
+\begin{proof}
+By induction on $i$. For $i=0$ the only subset is $\emptyset$, whose score is 0, as in $D[0][t]=0$. Let $i\ge1$ and let $S$ be an optimal subset for $(i,t)$. If $w_i>t$, module $i$ cannot belong to $S$, so $S$ is a feasible subset of $\{1,\dots,i-1\}$ and, by induction, its value is at most $D[i-1][t]$, which is achievable; this is the first case of the recurrence. If $w_i\le t$, either $i\notin S$, and then $v(S)\le D[i-1][t]$; or $i\in S$, and then $S\setminus\{i\}$ is a subset of $\{1,\dots,i-1\}$ with time at most $t-w_i$, so $v(S)\le v_i+D[i-1][t-w_i]$. Both values are achievable by the induction hypothesis, hence the optimum is their maximum, as in the second case.
+\end{proof}
+
+\begin{lemma}[Reconstruction]\label{lem:reconstruction}
+The backward walk of Algorithm~\ref{alg:dp} returns a feasible selection with score $D[n][T]$.
+\end{lemma}
+\begin{proof}
+Invariant: at the start of the iteration for $i$ with current time $t$, the selected modules so far plus the optimal value of $(i,t)$ add up to $D[n][T]$. If $D[i][t]\neq D[i-1][t]$, then by the recurrence $D[i][t]>D[i-1][t]$ and $D[i][t]=D[i-1][t-w_i]+v_i$: module $i$ is taken, the invariant holds for $(i-1,t-w_i)$, and the time remains non-negative because $w_i\le t$. If $D[i][t]=D[i-1][t]$, the invariant holds for $(i-1,t)$ without taking $i$. At $i=0$ the remaining value is 0.
+\end{proof}
+
+\begin{theorem}[Complexity of the DP]\label{thm:dp}
+Algorithm~\ref{alg:dp} computes exactly $n(T+1)$ cells, each in constant time. Its running time is $\Theta(nT)$ in the best, worst and average cases, and the reconstruction adds $\Theta(n)$. The space is $\Theta(nT)$ for the table and $\Theta(T)$ for the vector version (which runs at most $n(T+1)$ inner iterations).
+\end{theorem}
+\begin{proof}
+The loops have fixed bounds $n$ and $T+1$ that do not depend on the values of $w_i$ and $v_i$, and the body does a constant number of comparisons and additions. Hence the count is $n(T+1)$ on every input. The table has $(n+1)(T+1)$ cells. In the vector version, row $i$ is computed from row $i-1$ in place by scanning $t$ from $T$ down to $w_i$; the decreasing order guarantees that $d[t-w_i]$ still holds the value of row $i-1$.
+\end{proof}
+
+\begin{proposition}[Pseudo-polynomial time]\label{prop:pseudo}
+The running time $\Theta(nT)$ is polynomial in the numeric value of $T$ but exponential in the length of its binary encoding.
+\end{proposition}
+\begin{proof}
+Writing $T$ takes $k=\lceil\log_2(T+1)\rceil$ bits, so $T\ge 2^{k-1}$ and the running time is $\Omega(n2^{k-1})$, exponential in $k$. It is polynomial only if $T$ is bounded by a polynomial in $n$ (or if numbers are encoded in unary). This does not contradict the NP-hardness of the problem, which would be contradicted only by an algorithm polynomial in the \emph{bit length} of the input.
+\end{proof}
+
+\paragraph{Memoized version.} The reachable states $(i,t)$ satisfy $0\le i<n$ and $0\le t\le T$, so at most $n(T+1)$ states are computed, each in constant time besides the recursive calls: $\bigO(nT)$ in the worst case. If no module fits, only the states $(0,T),\dots,(n-1,T)$ are visited: the best case is $\Theta(n)$. The space is $\bigO(nT)$ for the cache and $\Theta(n)$ for the recursion.
+
+\subsection{Greedy strategy}
+
+\begin{proposition}[Running time]\label{prop:greedy-time}
+The greedy algorithm runs in $\Theta(n\log n)$ in the best, worst and average cases, using $\Theta(n)$ space.
+\end{proposition}
+\begin{proof}
+Merging two sorted lists of sizes $a\le b$ takes between $a$ and $a+b-1$ comparisons. For the balanced halves of merge sort, the cost $m(n)$ of the merge step satisfies $\lfloor n/2\rfloor\le m(n)\le n-1$, so the number of comparisons $C(n)=C(\lfloor n/2\rfloor)+C(\lceil n/2\rceil)+m(n)$ is $\Theta(n\log n)$ by the master theorem, regardless of the order of the input. The scan that follows takes $\Theta(n)$ steps. The lists and the output use $\Theta(n)$ space.
+\end{proof}
+
+\begin{proposition}[The greedy has no constant approximation ratio]\label{prop:greedy-unbounded}
+For every $T\ge3$ there is an instance on which the greedy obtains value $2$ while $\OPT=T$; the ratio $2/T$ tends to $0$.
+\end{proposition}
+\begin{proof}
+Take two modules $(w_1,v_1)=(1,2)$ and $(w_2,v_2)=(T,T)$. The ratios are $2$ and $1$, so the greedy takes module 1 first; then $1+T>T$ and module 2 does not fit. The greedy value is $2$, while module 2 alone is feasible and has value $T>2$.
+\end{proof}
+
+\begin{proposition}[Greedy with the best single module]\label{prop:greedy-half}
+Let $G$ be the value of the greedy solution and $M=\max\{v_i: w_i\le T\}$. Then $\max\{G,M\}\ge\OPT/2$.
+\end{proposition}
+\begin{proof}
+Order the modules by decreasing ratio. If all modules fit together, $G=\OPT$. Otherwise let $k$ be the first module in this order that does not fit when the greedy reaches it; the greedy has taken all modules $1,\dots,k-1$, so $G\ge P:=\sum_{i<k}v_i$. By Dantzig's fractional relaxation \cite{dantzig1957}, $\OPT\le P+\frac{r}{w_k}v_k\le P+v_k$, where $r<w_k$ is the room left after the first $k-1$ modules. Since $w_k\le T$, we have $v_k\le M$, so $\OPT\le G+M\le 2\max\{G,M\}$.
+\end{proof}
+
+\subsection{Branch and Bound}
+
+\begin{lemma}[Validity of the bound]\label{lem:bound}
+For a node at position $k$ with used time $u$ and score $s$, the quantity $s+\lfloor\mathrm{fill}\rfloor$ computed by \textsc{UpperBound} is at least the best score of any selection that extends the node.
+\end{lemma}
+\begin{proof}
+The undecided modules, taken in decreasing ratio, are filled until the first one that does not fit, of which a fraction is taken: this is the optimal solution of the fractional relaxation of the remaining problem \cite{dantzig1957}. Any integral extension is feasible for the relaxation, so its value is at most the relaxation value; since scores are integers, it is also at most the floor of that value.
+\end{proof}
+
+\paragraph{Correctness and complexity.} Pruning a node whose bound does not exceed the incumbent discards only extensions that cannot improve it (Lemma~\ref{lem:bound}), so Branch and Bound returns the optimum, by the same argument as Theorem~\ref{thm:dfs-correct}. It visits at most $2^{n+1}-1$ nodes and spends $\bigO(n)$ steps on the bound of each, so the worst case is $\bigO(n2^n)$. The sort costs $\Theta(n\log n)$, which is also the best case (for example, when no module fits). The behavior in between depends on how tight the bound is, which in turn depends on the instance family (Section~\ref{sec:exp-families}). The space is $\Theta(n)$.
+
+\subsection{Meet-in-the-Middle}
+
+\begin{theorem}[Meet-in-the-Middle]\label{thm:mitm}
+The algorithm is exact and runs in $\bigO(2^{\lceil n/2\rceil})$ time and space, regardless of $T$. This bound is tight (worst case $\Theta(2^{n/2})$) when $\sum_i w_i\le T$, and the best case is $\Theta(n)$ when no module fits.
+\end{theorem}
+\begin{proof}
+After processing $k$ modules, each list holds at most $2^k$ subsets, and the merge of a list with its shifted copy costs $\bigO(2^k)$. Summing over the $h=\lceil n/2\rceil$ modules of the larger half gives $\sum_{k<h}\bigO(2^k)=\bigO(2^h)$; the sweep of the second phase is linear in $|L_A|+|L_B|$. Correctness: as $t$ (the time of the subset of $A$) grows, the room $T-t$ shrinks, so the pointer in $L_B$ only moves backwards; $bestB[p]$ is the best score among the subsets of $B$ with time at most the time at position $p$, hence the sweep evaluates $\max_{a}\,\bigl(v_a+\mathrm{best}_B(T-t_a)\bigr)$ over all subsets $a$ of $A$, which equals $\OPT$. If $\sum_iw_i\le T$ nothing is pruned and both lists are complete. If no module fits, both lists remain $[(0,0)]$ and the merges are trivial: $\Theta(n)$.
+\end{proof}
+
+\subsection{FPTAS}
+
+\begin{theorem}[FPTAS guarantee and cost]\label{thm:fptas}
+For $\varepsilon\in(0,1)$, Algorithm~\ref{alg:fptas} returns a feasible selection with value at least $(1-\varepsilon)\OPT$ in $\bigO(n^3/\varepsilon)$ time and space.
+\end{theorem}
+\begin{proof}
+Let $S^*$ be an optimal selection and $S'$ the selection returned, optimal for the scaled scores $v'_i=\lfloor v_i/K\rfloor$ (the profit DP is exact). Since $K v'_i\le v_i<Kv'_i+K$,
+\[
+v(S')\ \ge\ K\,v'(S')\ \ge\ K\,v'(S^*)\ >\ \sum_{i\in S^*}(v_i-K)\ \ge\ \OPT-nK\ =\ \OPT-\varepsilon v_{\max}\ \ge\ (1-\varepsilon)\OPT,
+\]
+where the last step uses $v_{\max}\le\OPT$ (the module with the largest score fits alone). The scaled scores satisfy $v'_i\le v_{\max}/K=n/\varepsilon$, so $S=\sum_iv'_i\le n^2/\varepsilon$ and the table has $(n+1)(S+1)=\bigO(n^3/\varepsilon)$ cells, each computed in constant time.
+\end{proof}
+
+\subsection{Summary}
+
+\begin{table}[h]
+\centering
+\caption{Complexity summary. Averages marked ``measured'' are reported in Section~\ref{sec:experiments}.}\label{tab:complexity}
+\small
+\begin{tabularx}{\linewidth}{@{}l l l X l@{}}
+\toprule
+Algorithm & Best case & Worst case & Average case & Space\\
+\midrule
+Exhaustive DFS & $\Theta(n)$ & $\Theta(2^n)$ & measured (data dependent) & $\Theta(n)$\\
+DP (table) & $\Theta(nT)$ & $\Theta(nT)$ & $\Theta(nT)$ & $\Theta(nT)$\\
+DP (vector) & $\Theta(nT)$ & $\Theta(nT)$ & $\Theta(nT)$ & $\Theta(T)$\\
+DP (memoized) & $\Theta(n)$ states & $\bigO(nT)$ states & measured (reachable states) & $\bigO(nT)$\\
+Greedy & $\Theta(n\log n)$ & $\Theta(n\log n)$ & $\Theta(n\log n)$ & $\Theta(n)$\\
+Greedy + best item & $\Theta(n\log n)$ & $\Theta(n\log n)$ & $\Theta(n\log n)$ & $\Theta(n)$\\
+Branch and Bound & $\Theta(n\log n)$ & $\bigO(n2^n)$ & measured (instance dependent) & $\Theta(n)$\\
+Meet-in-the-Middle & $\Theta(n)$ & $\Theta(2^{n/2})$ & measured (depends on $T$) & $\bigO(2^{n/2})$\\
+FPTAS & $\Theta(nS)$ & $\bigO(n^3/\varepsilon)$ & $\Theta(nS)$ with $S\le n^2/\varepsilon$ & $\Theta(nS)$\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The table summarizes the central trade-off. The algorithms that are exact and independent of the data (DP) pay a cost proportional to the \emph{magnitude} of $T$; the exact algorithms that depend on $n$ alone (DFS, Branch and Bound, Meet-in-the-Middle) pay an exponential cost in $n$ in the worst case; the greedy is the cheapest but carries no guarantee (Proposition~\ref{prop:greedy-unbounded}); and the FPTAS buys independence from $T$ at the price of exactness and a high polynomial cost.

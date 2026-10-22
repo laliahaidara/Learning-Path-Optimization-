@@ -1,0 +1,55 @@
+\section{Introduction}\label{sec:intro}
+
+\subsection{Motivation and problem statement}
+
+Online learning environments offer far more material than any learner can study. A student who can dedicate only a few hours per week must therefore decide \emph{which} learning modules to take, and this decision directly affects how much is learned. Learning-path recommender systems address this decision by personalizing the sequence of learning activities that leads a learner toward a goal \cite{nabizadeh2020survey}. Among the limitations that such systems must respect, the available study time is one of the most concrete: modules take time, and the learner's time is finite.
+
+The article studied in this project, \emph{RUTICO: Recommending Successful Learning Paths Under Time Constraints} \cite{nabizadeh2017rutico}, addresses exactly this situation. After locating the learner in the course graph, RUTICO uses a depth-first search (DFS) to find all possible paths that fit in the learner's time restriction and recommends the path with the maximum score. The article therefore poses a clear optimization problem (maximize a learning score under a time budget) and presents a clear solution (exhaustive DFS).
+
+We isolate the combinatorial core of this problem. Each learning module $i \in \{1,\dots,n\}$ has an integer study time $w_i \ge 1$ and a non-negative score $v_i$ that quantifies the expected learning benefit; the learner has an integer time budget $T \ge 0$.
+
+\begin{definition}[Learning-path selection problem]\label{def:lps}
+Given $n$ modules with times $w_i$ and scores $v_i$ and a budget $T$, find a subset $S \subseteq \{1,\dots,n\}$ that maximizes $v(S)=\sum_{i\in S} v_i$ subject to $w(S)=\sum_{i\in S} w_i \le T$.
+\end{definition}
+
+Definition~\ref{def:lps} is the classical \emph{0/1 Knapsack Problem}: each module is taken entirely or not at all. In this formulation the modules are independent of each other. The course graph of the article additionally imposes prerequisites; ignoring them is a deliberate \emph{relaxation} that we state explicitly and discuss in Sections~\ref{sec:decisions} and~\ref{sec:conclusion}.
+
+\subsection{Techniques and algorithms studied}
+
+The assignment requires analyzing the algorithm created by the authors of the article, implementing it, and comparing it with at least one other approach from the literature. We therefore study three algorithms that play distinct roles, and three additional ones that broaden the comparison (Table~\ref{tab:roles}).
+
+\begin{table}[h]
+\centering
+\caption{Roles of the algorithms and design techniques studied.}\label{tab:roles}
+\footnotesize
+\begin{tabularx}{\linewidth}{@{}p{2.5cm} p{3.9cm} X p{3.3cm}@{}}
+\toprule
+Role & Algorithm & Design technique & Source file\\
+\midrule
+Authors (article) & Exhaustive DFS with time pruning & Depth-first search with backtracking & \code{dfs.py}\\
+Proposal & 0/1 Knapsack DP (table, vector, memoized) & Dynamic programming & \code{dp.py}\\
+Comparison (mandatory) & Greedy by score/time ratio & Greedy strategy (and merge sort: divide and conquer) & \code{greedy.py}\\
+Extra comparison & Branch and Bound & Implicit enumeration with bounding & \code{branch\_and\_bound.py}\\
+Extra comparison & Meet-in-the-Middle & Divide and conquer on the input set & \code{meet\_in\_the\_middle.py}\\
+Extra comparison & FPTAS & Value scaling + DP over the profit & \code{fptas.py}\\
+Extension & DFS over the prerequisite graph & Graph search with backtracking & \code{graph\_dfs.py}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The central argument of the project is that these techniques are not unrelated. The DFS of the authors explores a decision tree with $2^n$ leaves in which many branches reach the same state; dynamic programming is, in essence, the same search with each state computed only once. This explains why DP is the natural proposal: it keeps the exactness of the exhaustive search and removes its exponential redundancy (Section~\ref{sec:design}).
+
+\subsection{Contributions}
+
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt]
+\item A formal model of the learning-path selection problem and its relation to the knapsack family, including the relaxation with respect to the article (Sections~\ref{sec:intro} and~\ref{sec:background}).
+\item A design analysis that derives dynamic programming from the authors' DFS (Section~\ref{sec:design}).
+\item Proofs of correctness and of best-, worst- and (empirical) average-case complexity for every algorithm, including approximation guarantees for the greedy variants and the FPTAS (Section~\ref{sec:complexity}).
+\item A modular Python implementation written without algorithmic libraries, in which every algorithm returns a common result type with an operation counter (Section~\ref{sec:implementation}).
+\item An experimental evaluation that validates correctness on more than one thousand random instances, measures growth rates in operations and in time, tests three families of instances with different correlation between time and score, and demonstrates the pseudo-polynomial behavior of DP (Section~\ref{sec:experiments}).
+\item A discussion of why DP is the most suitable algorithm for this scenario, and of the regimes in which each alternative wins (Section~\ref{sec:discussion}).
+\end{itemize}
+
+\subsection{Organization of this report}
+
+Section~\ref{sec:background} presents the theoretical background. Section~\ref{sec:design} covers the algorithm design (assignment item 1.1.1). Section~\ref{sec:implementation} describes the implementation, pseudocode and the test instance. Section~\ref{sec:complexity} contains the complexity analysis (item 1.1.2). Section~\ref{sec:experiments} reports the experiments, and Section~\ref{sec:discussion} discusses the results. Section~\ref{sec:members} lists the activities of each member, and Section~\ref{sec:conclusion} concludes the report with the main difficulties encountered.

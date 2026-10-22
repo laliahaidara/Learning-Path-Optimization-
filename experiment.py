@@ -13,12 +13,12 @@ import statistics
 import time
 
 import matplotlib
-
-from algorithms import LearningModule, complete_dag, dfs_paths, dp_memoized, dp_table, dp_vector, evaluate, exhaustive_dfs, greedy_with_best_item
 matplotlib.use("Agg")  # writes PNG files without needing a graphical interface
 import matplotlib.pyplot as plt
 
-from algorithms import (greedy, branch_and_bound, meet_in_the_middle, fptas)
+from algorithms import (LearningModule, evaluate, exhaustive_dfs, dfs_paths, complete_dag,
+                        dp_table, dp_vector, dp_memoized, greedy, greedy_with_best_item,
+                        branch_and_bound, meet_in_the_middle, fptas)
 from instances import FAMILIES, generate_instance
 
 OUTPUT_DIR = "results"

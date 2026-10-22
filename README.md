@@ -17,6 +17,8 @@ algorithms/               # ALGORITHM files (one module per algorithm)
 instances.py              # generators (uncorrelated / weakly / strongly correlated)
 experiment.py             # EXPERIMENT file: test instance + 8 experiment blocks
 results/                  # CSVs, plots (PNG) and the full output of one run
+report/                   # the paper: report.pdf (final), report.tex + sections/ (editable LaTeX source),
+                          # figures/, make_tables.py (regenerates the tables from results/*.csv)
 ```
 
 ## How to run (Python 3.10+; matplotlib only for the plots)
@@ -32,3 +34,8 @@ Blocks: demo, correctness, time, scale, quality, pseudo, families, fptas, graph.
 Understand and rewrite the code with your own structure and naming before submitting
 (automatic plagiarism checker), and every group member must be able to explain every file.
 Check the course policy on AI tools and disclose its use if required.
+
+## Report
+`report/report.pdf` is the final paper. To edit it (member names are on the cover page and in the
+Members section), change `report/report.tex` and `report/sections/*.tex` and run `pdflatex report.tex` twice
+inside `report/`. After re-running the experiments, run `python report/make_tables.py` to refresh the tables.
