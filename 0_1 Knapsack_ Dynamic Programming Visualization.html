@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>0/1 Knapsack: Dynamic Programming Visualization</title>
+<style>
+:root{color-scheme:light;--bg:#fff;--fg:#1b1b1f;--mut:#5f6368;--ln:#d5d7dc;--card:#f6f7f9;--ac:#2563eb;--cur:#fde68a;--sk:#cfe3ff;--tk:#c9f2d3;--pt:#e6dcff;--tn:#86efac;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#16181d;--fg:#e8e9ec;--mut:#9aa0a8;--ln:#383c44;--card:#20232a;--ac:#6ea0ff;--cur:#7a6320;--sk:#27466e;--tk:#1f5a35;--pt:#4a3a78;--tn:#2f8f55}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#16181d;--fg:#e8e9ec;--mut:#9aa0a8;--ln:#383c44;--card:#20232a;--ac:#6ea0ff;--cur:#7a6320;--sk:#27466e;--tk:#1f5a35;--pt:#4a3a78;--tn:#2f8f55}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{padding:16px;max-width:1100px;margin:0 auto}
+h1{font-size:1.25rem;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-bottom:12px}
+textarea,input[type=number]{font:inherit;background:var(--card);color:var(--fg);border:1px solid var(--ln);border-radius:6px;padding:6px}
+textarea{width:290px;height:130px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px}
+input[type=number]{width:70px}label{display:block;font-size:.85rem;color:var(--mut);margin-bottom:3px}
+button{font:inherit;background:var(--card);color:var(--fg);border:1px solid var(--ln);border-radius:6px;padding:6px 12px;cursor:pointer}
+button.p{background:var(--ac);color:#fff;border-color:var(--ac)}button:hover{filter:brightness(.95)}
+#msg{background:var(--card);border:1px solid var(--ln);border-radius:8px;padding:10px 12px;min-height:3em;margin:10px 0}
+#err{color:#dc2626;min-height:1.2em}
+.wrap{overflow-x:auto;border:1px solid var(--ln);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--ln);padding:4px 7px;text-align:center;min-width:30px;height:24px}
+th{background:var(--card);font-weight:600}th.l{text-align:left;white-space:nowrap;position:sticky;left:0}
+td.sk{background:var(--sk)}td.tk{background:var(--tk)}td.pth{background:var(--pt)}td.tkn{background:var(--tn);font-weight:700}td.cur{background:var(--cur);font-weight:700;outline:2px solid var(--ac)}
+.lg{display:flex;flex-wrap:wrap;gap:12px;font-size:.82rem;color:var(--mut);margin-top:8px}.lg i{display:inline-block;width:14px;height:14px;border:1px solid var(--ln);vertical-align:-2px;margin-right:4px;border-radius:3px}
+</style></head><body>
+<h1>0/1 Knapsack: Dynamic Programming</h1>
+<p class="sub">Choose learning modules to maximize the score within a time budget T. Watch the table D[i][t] fill cell by cell, then trace the solution back.</p>
+<div class="row">
+ <div><label for="mods">Modules (one per line: name, time, score)</label>
+<textarea id="mods">Programming Logic, 1, 10
+Python Basics, 5, 46
+Data Structures, 5, 45
+Databases, 2, 15
+Networking, 3, 20
+Git, 1, 6</textarea></div>
+ <div><label for="T">Budget T (0 to 40)</label><input type="number" id="T" value="10" min="0" max="40">
+ <p style="margin:10px 0 0"><button class="p" id="bBuild">Build / Reset</button></p><div id="err"></div></div>
+ <div><label for="spd">Speed</label><input type="range" id="spd" min="1" max="10" value="4"></div>
+</div>
+<div class="row" style="margin-bottom:0">
+ <button id="bBack">◀ Back</button><button class="p" id="bStep">Step ▶</button><button id="bPlay">▶ Play</button>
+ <button id="bFill">Fill table</button><button id="bEnd">Finish</button><span id="pos" style="align-self:center;color:var(--mut)"></span>
+</div>
+<div id="msg"></div>
+<div class="wrap" id="tbl"></div>
+<div class="lg"><span><i style="background:var(--cur)"></i>current cell</span><span><i style="background:var(--sk)"></i>skip source D[i−1][t]</span><span><i style="background:var(--tk)"></i>take source D[i−1][t−w]+v</span><span><i style="background:var(--pt)"></i>reconstruction path</span><span><i style="background:var(--tn)"></i>module taken</span></div>
+<script>
+const $=id=>document.getElementById(id),esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+let M=[],T=0,D=[],S=[],k=0,timer=null;
+function parse(){
+  const ms=$("mods").value.split("\n").map(l=>l.trim()).filter(Boolean).map(l=>{const r=l.split(",").map(s=>s.trim());return{n:r[0],w:+r[1],v:+r[2]}});
+  const t=+$("T").value;
+  if(!ms.length||ms.length>10)return"Use 1 to 10 modules.";
+  if(ms.some(m=>!m.n||!Number.isInteger(m.w)||m.w<1||!Number.isInteger(m.v)||m.v<0))return"Each line must be: name, time (integer ≥ 1), score (integer ≥ 0).";
+  if(!Number.isInteger(t)||t<0||t>40)return"Budget T must be an integer from 0 to 40.";
+  M=ms;T=t;return"";
+}
+function build(){
+  stop();const err=parse();$("err").textContent=err;if(err)return;
+  const n=M.length;D=[Array(T+1).fill(0)];S=[];
+  for(let i=1;i<=n;i++){D.push([]);const{w,v}=M[i-1];
+    for(let t=0;t<=T;t++){const sk=D[i-1][t],tk=w<=t?D[i-1][t-w]+v:null;D[i][t]=tk!==null&&tk>sk?tk:sk;S.push({a:"fill",i,t,sk,tk});}}
+  let t=T;for(let i=n;i>=1;i--){const take=D[i][t]!==D[i-1][t];S.push({a:"back",i,t,take});if(take)t-=M[i-1].w;}
+  S.push({a:"done"});k=0;render();
+}
+function result(){
+  const ch=S.filter(s=>s.a==="back"&&s.take).map(s=>M[s.i-1]).reverse();
+  const tt=ch.reduce((a,m)=>a+m.w,0),sc=ch.reduce((a,m)=>a+m.v,0);let u=0,g=0;
+  [...M].sort((a,b)=>b.v*a.w-a.v*b.w).forEach(m=>{if(u+m.w<=T){u+=m.w;g+=m.v}});
+  const gap=sc?((sc-g)/sc*100).toFixed(1):"0.0";
+  return"<b>Done.</b> Optimal score <b>"+D[M.length][T]+"</b>: "+(ch.map(m=>esc(m.n)).join(", ")||"nothing")+" ("+tt+" of "+T+" time units). A greedy choice by score/time would score "+g+" (gap "+gap+"%).";
+}
+function explain(s){
+  if(!s)return"Press <b>Step</b> or <b>Play</b>. Row 0 is all zeros: with no modules, the score is 0.";
+  if(s.a==="done")return result();
+  const m=M[s.i-1];
+  if(s.a==="fill")return"<b>D["+s.i+"]["+s.t+"]</b>: "+(s.tk===null?"w = "+m.w+" &gt; t = "+s.t+", so "+esc(m.n)+" does not fit and D = D["+(s.i-1)+"]["+s.t+"] = <b>"+s.sk+"</b>":"max( skip: D["+(s.i-1)+"]["+s.t+"] = "+s.sk+", take "+esc(m.n)+": D["+(s.i-1)+"]["+(s.t-m.w)+"] + "+m.v+" = "+s.tk+" ) = <b>"+D[s.i][s.t]+"</b>");
+  return"Reconstruction at (i = "+s.i+", t = "+s.t+"): D[i][t] = "+D[s.i][s.t]+(s.take?" ≠ D[i−1][t] = "+D[s.i-1][s.t]+", so <b>take "+esc(m.n)+"</b> and t becomes "+(s.t-m.w):" = D[i−1][t], so skip "+esc(m.n));
+}
+function render(){
+  const n=M.length,cells=new Set(),path=new Map();
+  for(let j=0;j<k;j++){const s=S[j];if(s.a==="fill")cells.add(s.i+","+s.t);if(s.a==="back")path.set(s.i+","+s.t,s.take)}
+  const s=S[k-1];let cur=null,src=[];
+  if(s&&(s.a==="fill"||s.a==="back"))cur=s.i+","+s.t;
+  if(s&&s.a==="fill"){src=[[(s.i-1)+","+s.t,"sk"]];if(s.tk!==null)src.push([(s.i-1)+","+(s.t-M[s.i-1].w),"tk"])}
+  let h="<table><tr><th class='l'></th>"+Array.from({length:T+1},(_,t)=>"<th>"+t+"</th>").join("")+"</tr>";
+  for(let i=0;i<=n;i++){
+    h+="<tr><th class='l'>"+(i?"i="+i+" "+esc(M[i-1].n)+" (w="+M[i-1].w+", v="+M[i-1].v+")":"i=0 (no modules)")+"</th>";
+    for(let t=0;t<=T;t++){
+      const key=i+","+t;let c="";
+      if(path.has(key))c=path.get(key)?"tkn":"pth";
+      const sr=src.find(x=>x[0]===key);if(sr)c=sr[1];
+      if(key===cur)c="cur";
+      h+="<td class='"+c+"'>"+(i===0||cells.has(key)?D[i][t]:"")+"</td>";
+    }
+    h+="</tr>";
+  }
+  $("tbl").innerHTML=h+"</table>";$("msg").innerHTML=explain(s);$("pos").textContent="step "+k+" / "+S.length;
+}
+const step=()=>{if(k<S.length){k++;render()}else stop()};
+function stop(){if(timer){clearInterval(timer);timer=null}$("bPlay").textContent="▶ Play"}
+$("bBuild").onclick=build;
+$("bStep").onclick=()=>{stop();step()};
+$("bBack").onclick=()=>{stop();if(k>0){k--;render()}};
+$("bPlay").onclick=()=>{if(timer){stop();return}if(k>=S.length)k=0;$("bPlay").textContent="❚❚ Pause";timer=setInterval(step,1200/$("spd").value)};
+$("spd").oninput=()=>{if(timer){clearInterval(timer);timer=setInterval(step,1200/$("spd").value)}};
+$("bFill").onclick=()=>{stop();k=Math.max(k,M.length*(T+1));render()};
+$("bEnd").onclick=()=>{stop();k=S.length;render()};
+build();
+</script></body></html>
