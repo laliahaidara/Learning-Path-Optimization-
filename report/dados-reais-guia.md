@@ -184,6 +184,68 @@ os dados reais (`results/real_budget_sweep.csv`, pronto pra virar figura). Fora 
 paper, é o argumento de produto: o GuIA poderia responder "sua melhor trilha com 2h,
 5h ou 10h por semana" com uma única conta.
 
+### 3.6 Bônus: a metaheurística GRASP (ponte com o MAS-Cloud+)
+
+**Conclusão: o GRASP conserta os piores erros do greedy, mas no nosso domínio ele é
+dominado pela DP — que é exatamente o que o MAS-Cloud+ concluiu no domínio dele.**
+
+Contexto: o MAS-Cloud+ (paper do grupo do Prof. Marotta) escolhe máquinas virtuais
+usando três camadas de raciocínio — regras rápidas, **metaheurística (GRASP)** e
+otimização formal. Nosso trabalho cobria todas menos a metaheurística. Implementamos
+o GRASP pro knapsack de trilhas (`algorithms/grasp.py`), no mesmo molde dos
+Algoritmos 3–5 do MAS-Cloud+: construção gulosa **randomizada** (sorteia entre os
+melhores candidatos, não pega sempre o 1º) + busca local (tenta adicionar e trocar
+módulos até não melhorar). Randomizado, porém reprodutível: seed fixa, e o alpha
+(largura do sorteio) é sorteado a cada iteração — isso elevou a taxa de ótimo de
+95,9% pra 98,1% nas 1.800 instâncias de validação.
+
+Qualidade nas famílias sintéticas (gap médio / pior, ρ=0,3, 30 instâncias por
+célula — a coluna nova da Tabela VII):
+
+| Família, n | Greedy | GRASP | Custo GRASP ÷ greedy |
+|---|---|---|---|
+| strongly corr., n=8 | 5,9% / 18,2% | **0,0% / 0,0%** | ×64 |
+| strongly corr., n=15 | 4,7% / 10,7% | **0,03% / 0,8%** | ×86 |
+| weakly corr., n=8 | 4,7% / 25,0% | **0,0% / 0,0%** | ×53 |
+| uncorrelated, n=60 | 0,4% / 1,3% | 0,3% / 1,2% | ×260 |
+
+Nas instâncias reais do GuIA (pior gap na varredura de orçamentos):
+
+| Instância / score | Pior gap greedy | Pior gap GRASP | Ops em T=10h (greedy / GRASP / DP) |
+|---|---|---|---|
+| módulos / `conclusao` | 21,0% | **0,0%** | 38 / 3.580 / 7.212 |
+| módulos / `conteudo` | 18,8% | **1,5%** | 40 / 3.616 / 7.212 |
+| tópicos / `dominio` | 2,3% | 3,2% | 441 / **211.950** / 46.878 |
+| tópicos / `engajamento` | 7,3% | 2,1% | 404 / **186.815** / 46.878 |
+
+E na instância adversarial da Seção IV-C (onde o greedy marca 2 contra ótimo 1000):
+o GRASP acha 1000.
+
+A leitura — e é aqui que o bônus brilha:
+
+1. **O GRASP cumpre o que promete**: elimina os desastres do greedy (25% → 0% no
+   sintético; 21% → 0% no real; adversarial resolvido) mantendo custo bem abaixo do
+   DFS exaustivo.
+2. **Mas no nosso domínio ele perde da DP nos dois critérios**: a n=78 custa **4,5×
+   mais que a DP exata** (212 mil vs 47 mil operações) e ainda assim pode perder
+   3,2% — sem nenhuma garantia. Pagar mais caro por uma resposta pior que a exata
+   não tem defesa quando T é pequeno.
+3. **Consistência entre domínios**: no próprio MAS-Cloud+, a camada de otimização
+   formal venceu a metaheurística (19,3% melhor em desempenho, 6,5% mais barata).
+   Nos dois domínios, quando o problema cabe no método exato, o exato vence — a
+   metaheurística é o plano B pra quando não cabe. Nosso T pequeno garante que cabe.
+
+### 3.7 O que atualizar no paper por causa do bônus
+
+- **Tabela I**: nova linha "Extra — GRASP — metaheurística (construção randomizada
+  + busca local)", citando MAS-Cloud+.
+- **Tabela VII**: colunas do GRASP (dados em `results/grasp_quality.csv`).
+- **Tabela X** (regimes): nova linha — "n grande demais pros exatos, sem garantia
+  exigida → GRASP"; e a observação de que com T pequeno a DP domina a metaheurística.
+- **Prova de término** (uma linha, estilo da Seção V): todo movimento aceito pela
+  busca local aumenta estritamente o score total, que é limitado por Σv_i; logo a
+  busca termina.
+
 ## 4. Parágrafos prontos para o Overleaf (inglês)
 
 Sugestão de subseção VI-J ("Real platform data") — ajustem à vontade:
@@ -213,6 +275,29 @@ Sugestão de subseção VI-J ("Real platform data") — ajustem à vontade:
 > Finally, a single DP table answered the optimal selection for every budget up to
 > 24 h, the property highlighted in Section VII-A, at no extra cost.
 
+Parágrafo do bônus GRASP (sugestão: subseção após a VI-H, ou dentro do Discussion):
+
+> **A metaheuristic baseline from MAS-Cloud+.** Our comparison covered every design
+> paradigm except metaheuristics. We adapted the GRASP reasoning layer of
+> MAS-Cloud+ [Mendes et al., 2022], which selects virtual machines under SLA
+> constraints, to learning-path selection: a greedy randomized construction draws
+> uniformly from a restricted candidate list in ratio order (with the RCL width
+> resampled per iteration), followed by a first-improvement local search with add
+> and swap moves; every accepted move strictly increases the total score, bounded
+> by the score sum, so the search terminates. Seeded runs make the results
+> reproducible. Over the 1,800-instance correctness protocol of Section VI-B, GRASP
+> found the optimum in 98.1% of the cases (mean gap 0.044%, worst 9.4%). It repairs
+> the greedy's failure modes — 25.0% worst gap to 0.0% on weakly correlated
+> instances with n=8, 21.0% to 0.0% on the real module instance, and it solves the
+> adversarial instance of Section IV-C exactly — at 50–260 times the greedy's cost.
+> On the topic-level real instance (n=78), however, GRASP performed 4.5 times MORE
+> operations than the exact DP while still losing up to 3.2%, with no guarantee.
+> This mirrors the conclusion of MAS-Cloud+ itself, where the formal-optimization
+> model outperformed the metaheuristic by 19.27% at 6.53% lower cost: in both
+> domains, when the instance fits the exact method, the exact method dominates, and
+> the metaheuristic remains the fallback for regimes beyond its reach — which the
+> small T of learning-path selection never produces.
+
 E uma frase para Threats to Validity:
 
 > The topic-level instance allocates module time to topics proportionally to their
@@ -231,6 +316,9 @@ E uma frase para Threats to Validity:
 3. A repartição de tempo por tópico é um proxy (declarada na Seção 2.2).
 4. NPS é por curso, não por módulo — dentro de um curso é constante.
 5. A mediana de tempo real só usa sessões concluídas (abandonos não têm fim marcado).
+6. Os parâmetros do GRASP (20 iterações, alpha sorteado em [0,15, 0,9]) foram
+   escolhidos na validação, não otimizados por família; contadores de operações de
+   algoritmos diferentes seguem não-comensuráveis (ressalva que o paper já faz).
 
 ## 6. Como reproduzir
 

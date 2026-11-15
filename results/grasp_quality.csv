@@ -1,0 +1,13 @@
+familia,n,greedy_gap_medio,greedy_gap_pior,grasp_gap_medio,grasp_gap_pior,custo_grasp_vs_greedy
+uncorrelated,8,3.17,15.4,0.15,4.4,63.9
+uncorrelated,15,1.85,8.4,0.0,0.0,91.8
+uncorrelated,30,0.85,3.4,0.07,1.0,152.0
+uncorrelated,60,0.41,1.3,0.29,1.2,260.1
+weakly_correlated,8,4.74,25.0,0.0,0.0,53.4
+weakly_correlated,15,2.3,8.9,0.28,4.2,75.3
+weakly_correlated,30,0.75,2.8,0.22,1.0,111.9
+weakly_correlated,60,0.29,1.3,0.51,1.0,181.2
+strongly_correlated,8,5.85,18.2,0.0,0.0,63.5
+strongly_correlated,15,4.66,10.7,0.03,0.8,85.7
+strongly_correlated,30,1.86,4.3,0.0,0.0,123.4
+strongly_correlated,60,0.92,2.3,0.26,2.0,185.1
