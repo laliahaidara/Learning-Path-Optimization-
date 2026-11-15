@@ -1,0 +1,21 @@
+unidade,T,algoritmo,valor,operacoes
+horas,10,DFS,49,4437
+horas,10,DP,49,132
+horas,10,B&B,49,124
+horas,10,MITM,49,420
+horas,10,Greedy,49,42
+blocos de 15 min,40,DFS,57,5034
+blocos de 15 min,40,DP,57,492
+blocos de 15 min,40,B&B,57,348
+blocos de 15 min,40,MITM,57,408
+blocos de 15 min,40,Greedy,54,38
+blocos de 5 min,120,DFS,56,4935
+blocos de 5 min,120,DP,56,1452
+blocos de 5 min,120,B&B,56,311
+blocos de 5 min,120,MITM,56,411
+blocos de 5 min,120,Greedy,54,40
+minutos,600,DFS,56,4884
+minutos,600,DP,56,7212
+minutos,600,B&B,56,311
+minutos,600,MITM,56,414
+minutos,600,Greedy,54,40

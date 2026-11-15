@@ -1,0 +1,7 @@
+score,n,min_time,max_time,pearson_time_score
+conclusao,12,16,376,-0.624
+conteudo,12,16,376,0.92
+nps,12,16,376,-0.047
+sintetica:uncorrelated,12,,,0.105
+sintetica:weakly_correlated,12,,,0.981
+sintetica:strongly_correlated,12,,,1.0
