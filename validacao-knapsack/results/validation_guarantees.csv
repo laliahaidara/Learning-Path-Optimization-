@@ -1,8 +1,0 @@
-verificacao,instancias,violacoes,valor
-guloso > ótimo,1200,0,
-guloso+item < ótimo/2,1200,0,
-"FPTAS(0,1) < 0,9·ótimo",1200,0,
-FPTAS > ótimo,1200,0,
-GRASP: % de ótimos,1800,,98.1
-GRASP: gap médio (%),1800,,0.044
-GRASP: pior gap (%),1800,,9.4
