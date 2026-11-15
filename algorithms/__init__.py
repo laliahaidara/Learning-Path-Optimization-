@@ -7,3 +7,4 @@ from .greedy import greedy, greedy_with_best_item
 from .branch_and_bound import branch_and_bound
 from .meet_in_the_middle import meet_in_the_middle
 from .fptas import fptas
+from .grasp import grasp
