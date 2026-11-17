@@ -1,4 +1,7 @@
-"""Data model: learning modules and the standardized result returned by every algorithm."""
+"""Data model: learning modules and the standardized result returned by every algorithm.
+
+Responsável: definido em conjunto pelo grupo; todos revisaram.
+"""
 from dataclasses import dataclass, field
 from typing import List
 

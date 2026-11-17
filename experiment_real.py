@@ -12,6 +12,8 @@ Blocks:
     pseudopoly   - same instance in hours / 15-min blocks / minutes (T grows,
                    n fixed): the practical price of the DP's pseudo-polynomiality;
     sweep        - one DP table answers every budget (last row), per score.
+
+Responsável: Dalila Rezende — revisado por todo o grupo.
 """
 import argparse
 import csv

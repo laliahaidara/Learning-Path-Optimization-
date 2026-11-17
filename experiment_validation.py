@@ -16,6 +16,8 @@ Usage:
     python experiment_validation.py --only optimum (one block)
 
 Blocks: optimum, guarantees, sorting, pearson, runtime, bnb. Outputs: results/validation_*.csv
+
+Responsável: Dalila Rezende — revisado por todo o grupo.
 """
 import argparse
 import csv

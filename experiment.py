@@ -4,6 +4,8 @@ pseudo-polynomial behavior, instance families, FPTAS and graph-DFS experiments.
 Usage:  python experiment.py                       (everything, ~1 min)
         python experiment.py --quick               (reduced version)
         python experiment.py --only demo correctness   (only some blocks)
+
+Responsável: Dalila Rezende — revisado por todo o grupo.
 """
 import argparse
 import csv

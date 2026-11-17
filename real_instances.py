@@ -10,6 +10,8 @@ Score definitions (the experiments run all of them):
   conclusao  - completion rate in % (engagement/success proxy);
   conteudo   - number of topics (content-volume proxy, the article's hypothesis);
   nps        - course mean NPS x 10 (satisfaction proxy, constant within a course).
+
+Responsável: Dalila Rezende — revisado por todo o grupo.
 """
 import csv
 import os

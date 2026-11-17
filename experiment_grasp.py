@@ -12,6 +12,8 @@ Blocks:
     real        - GRASP on the real platform instances (modules n=12 and
                   topics n=78), fine budget sweep and cost at weekly budgets;
     adversarial - the paper's adversarial instance, where the greedy scores 2.
+
+Responsável: Dalila Rezende — revisado por todo o grupo.
 """
 import argparse
 import csv

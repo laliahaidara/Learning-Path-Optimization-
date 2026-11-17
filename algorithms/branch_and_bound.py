@@ -1,4 +1,7 @@
-"""Branch and Bound with a fractional upper bound (linear relaxation of the knapsack)."""
+"""Branch and Bound with a fractional upper bound (linear relaxation of the knapsack).
+
+Responsável: Leandro Bergmann — revisado por todo o grupo.
+"""
 from .model import Result
 from .sorting import sort_by_ratio
 

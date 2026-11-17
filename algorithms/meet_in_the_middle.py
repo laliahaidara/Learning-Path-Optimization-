@@ -1,4 +1,7 @@
-"""Meet-in-the-middle (Horowitz–Sahni): exact, Θ(2^(n/2)) and independent of T."""
+"""Meet-in-the-middle (Horowitz–Sahni): exact, Θ(2^(n/2)) and independent of T.
+
+Responsável: Leandro Bergmann — revisado por todo o grupo.
+"""
 from .model import Result
 from .sorting import merge
 

@@ -4,6 +4,8 @@ Recurrence (D[i][t] = best score using the first i modules and t time units):
     D[0][t] = 0
     D[i][t] = D[i-1][t]                              if w_i > t
     D[i][t] = max(D[i-1][t], D[i-1][t-w_i] + v_i)    otherwise
+
+Responsável: Adriana Souza — revisado por todo o grupo.
 """
 import sys
 

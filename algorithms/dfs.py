@@ -1,4 +1,7 @@
-"""Exhaustive DFS with time pruning and backtracking (the paper's strategy, knapsack version)."""
+"""Exhaustive DFS with time pruning and backtracking (the paper's strategy, knapsack version).
+
+Responsável: Lalia Sadio — revisado por todo o grupo.
+"""
 from .model import Result
 
 

@@ -1,4 +1,7 @@
-"""Knapsack FPTAS: (1 - ε)-approximation with time polynomial in n and 1/ε (independent of T)."""
+"""Knapsack FPTAS: (1 - ε)-approximation with time polynomial in n and 1/ε (independent of T).
+
+Responsável: Leandro Bergmann — revisado por todo o grupo.
+"""
 from .model import Result
 
 

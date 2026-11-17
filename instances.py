@@ -1,4 +1,7 @@
-"""Instance generators (reproducible through a seed) for the experiments."""
+"""Instance generators (reproducible through a seed) for the experiments.
+
+Responsável: Dalila Rezende — revisado por todo o grupo.
+"""
 import random
 
 from algorithms import LearningModule

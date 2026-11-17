@@ -19,7 +19,7 @@ disciplina — entenda o que foi feito, por que, e o que se concluiu.
 
 Todo o código é Python 3 puro (sem bibliotecas de algoritmos), organizado em um módulo
 por algoritmo, e cada algoritmo devolve um **contador de operações elementares** — uma
-medida de custo que não depende da máquina. Todos os experimentos são reprodutíveis
+medida de custo que não depende da máquina. Os contadores medem operações de natureza diferente em cada algoritmo (uma célula da DP, um nó do DFS ou do B&B), então as comparações diretas entre algoritmos indicam ordem de grandeza, e não custo exato. Todos os experimentos são reprodutíveis
 por linha de comando e suas saídas estão versionadas em `results/`.
 
 ## 2. O problema: escolher o que estudar quando o tempo não dá pra tudo
@@ -38,7 +38,7 @@ Dois esclarecimentos que evitam confusão:
   núcleo combinatório — essa "relaxação" está declarada no artigo e voltará nos
   trabalhos futuros.
 - Esse é exatamente o clássico **problema da mochila 0/1 (knapsack)**: cada item
-  (módulo) é levado inteiro ou não é levado. O problema é NP-completo, mas da
+  (módulo) é levado inteiro ou não é levado. O problema é NP-difícil (a versão de decisão é NP-completa), mas da
   variedade "fraca": admite algoritmo exato cujo custo depende do *valor numérico* do
   orçamento T, não só da quantidade de itens — e essa distinção é o fio condutor de
   todo o trabalho.
@@ -61,8 +61,7 @@ Sete algoritmos, cobrindo as principais técnicas de projeto:
    projeto: a árvore do DFS tem 2^n folhas, mas muitos ramos levam ao **mesmo estado**
    (mesmos módulos decididos, mesmo tempo restante). A DP é o mesmo percurso com cada
    estado calculado **uma única vez**: uma tabela de n×(T+1) células. Em outras
-   palavras, **a DP é o DFS dos autores com memória** — conserva a exatidão, descarta a
-   redundância. Três variantes: tabela completa (reconstrói a trilha), vetor (só o
+   palavras, **a DP é o DFS dos autores com memória**, no problema relaxado sem pré-requisitos: conserva a exatidão e descarta a redundância. Três variantes: tabela completa (reconstrói a trilha), vetor (só o
    valor, memória mínima) e memoizada (calcula só os estados alcançáveis).
 3. **Greedy por razão score/tempo** — ordena por "custo-benefício" e vai levando o que
    cabe. Rápido (Θ(n log n), com merge sort escrito à mão) e sem nenhuma garantia: um
@@ -91,21 +90,21 @@ estão no artigo; aqui vai o mapa):
 |---|---|---|---|---|
 | DFS exaustivo | sim | Θ(n) | Θ(2^n) | n e folga do orçamento |
 | DP (tabela) | sim | Θ(nT) | Θ(nT) — sempre | n e magnitude de T |
-| DP (vetor) | sim (só valor) | Θ(nT) | Θ(nT) | n e magnitude de T |
+| DP (vetor) | sim (só valor) | Θ(n) | Θ(nT) | n e magnitude de T |
 | DP (memoizada) | sim | Θ(n) | O(nT) | estados alcançáveis |
 | Greedy | não (perda ilimitada) | Θ(n log n) | Θ(n log n) | n |
 | Greedy + melhor item | ≥ ótimo/2 | Θ(n log n) | Θ(n log n) | n |
 | Branch and Bound | sim | Θ(n log n) | O(n·2^n) | n e correlação dos dados |
-| Meet-in-the-Middle | sim | Θ(n) | Θ(2^(n/2)) | só n |
+| Meet-in-the-Middle | sim | Θ(n) | Θ(2^(n/2)) | n e folga do orçamento |
 | FPTAS | ≥ (1−ε)·ótimo | — | O(n³/ε) | n e 1/ε |
 | GRASP (bônus) | não (sem garantia) | Θ(n log n) | pseudo-polinomial* | n, iterações, dados |
 
 \* cada movimento aceito da busca local aumenta o score total, que é limitado pela
-soma dos scores — isso prova que a busca termina.
+soma dos scores — isso prova que a busca termina. O limite pseudo-polinomial vale para scores inteiros; com scores reais a terminação se mantém, mas o limite de pior caso passa a ser exponencial.
 
 O detalhe teórico mais importante: a DP é **pseudo-polinomial** — Θ(nT) parece
 polinomial, mas T escrito em binário tem log T bits, então o custo é exponencial *no
-tamanho da entrada*. Isso não contradiz a NP-completude; significa que a DP é ótima
+tamanho da entrada*. Isso não contradiz a NP-dificuldade; significa que a DP é a escolha adequada
 **quando T é pequeno em valor absoluto** — e orçamento de estudo em minutos é
 exatamente isso.
 
@@ -126,8 +125,7 @@ garantias do greedy+item (≥ ótimo/2) e do FPTAS (≥ 0,9·ótimo com ε=0,1) 
 **O DFS explode como previsto.** No pior caso visitou exatamente 2^(n+1)−1 nós para
 todo n testado (8.388.607 nós em n=22, 1,24 s); no caso médio, ~57% disso, crescendo
 1,99× por módulo — médio também é exponencial. Extrapolando: ~5 minutos em n=30,
-~4 dias em n=40. Enquanto isso, em n=22 a DP computa 2.310 células: **duas mil vezes
-menos**, e a diferença só cresce.
+~4 dias em n=40. Enquanto isso, em n=22 a DP computa 2.310 células: **cerca de 3.600 vezes menos que o pior caso do DFS (e 2.000 vezes menos que o caso médio)**, e a diferença só cresce.
 
 **A DP escala.** Custo exatamente n(T+1) em toda instância (como provado): 600 módulos
 com T=3.060 custam 1.836.600 operações — 0,37 s em Python puro. O greedy fica abaixo
@@ -135,7 +133,7 @@ de 2 ms em qualquer tamanho.
 
 **Pseudo-polinomialidade na prática.** Mantendo 18 módulos e refinando a unidade de
 tempo (T de 100 a 102.400), só a DP cresce (1.818 → 1.843.218 operações); DFS, B&B,
-MITM e greedy nem se mexem — dependem de n, não de T.
+MITM e greedy não mudam: dependem de n e da estrutura da instância, não da magnitude de T.
 
 **Qualidade do greedy.** Gap médio pequeno e decrescente com n (abaixo de 3% para
 n≥30), mas pior caso severo com poucos módulos: 25,9% (n=8, ρ=0,3), 54,5% (ρ=0,1) e
@@ -144,8 +142,7 @@ A variante com melhor item conserta apenas os casos em que um módulo sozinho qu
 enche a mochila; o valor dela é a garantia de metade, não a média.
 
 **B&B é sensível aos dados; DP e MITM não.** Com R=1000 e n=40, instâncias fortemente
-correlacionadas custam ao B&B 11 a 15× mais que as não correlacionadas (até 44.475
-operações contra um pior de ~2.000) — em linha com a literatura. DP e MITM custam
+correlacionadas custam ao B&B, em média, 11 a 15× mais que as não correlacionadas (17.162 contra 1.377 operações em n=40); a pior execução chegou a 44.475 operações contra 2.087, cerca de 21× — em linha com a literatura. DP e MITM custam
 idêntico nas duas famílias. O B&B foi o exato mais barato em tudo que medimos (n≤40),
 mas é o único cujo custo oscila com os dados e sem garantia polinomial.
 
@@ -154,8 +151,7 @@ resolver exato com a DP (ε de 0,5 a 0,05) — encontrou o ótimo em todos os ca
 pagando caro por uma garantia mais fraca.
 
 **A enumeração do RUTICO.** A DFS sobre o grafo de pré-requisitos completo gera
-exatamente 2^(n−1) caminhos (32.768 em n=16): a abordagem do artigo original é
-exponencial no tamanho do grafo do curso — reforçando a motivação do projeto.
+exatamente 2^(n−1) caminhos (32.768 em n=16): no pior caso, a abordagem do artigo original é exponencial no tamanho do grafo do curso. Grafos de curso reais são mais esparsos, então esse número é um limite superior, e não o caso típico.
 
 ## 5. Validação com dados reais (plataforma GuIA / Sebrae)
 
@@ -173,11 +169,10 @@ Duas instâncias:
 - **Módulos (n=12)** — tempo = mediana real observada por módulo (16,5 a 376 min, uma
   variação de 23× que a carga horária estimada da plataforma, constante em 2h, não
   captura). Três definições de score: taxa de conclusão (`conclusao`), nº de tópicos
-  (`conteudo`) e NPS do curso (`nps`).
+  (`conteudo`) e NPS do curso (`nps`). Entram os 12 dos 19 módulos que têm tempo medido; os tempos são arredondados para o minuto inteiro mais próximo (mínimo de 1), porque a DP exige tempos inteiros.
 - **Tópicos (n=78)** — tempo do módulo repartido entre os tópicos proporcionalmente ao
-  volume de exercícios de cada um (proxy observado; é a única escolha de modelagem e
-  está declarada). Scores: nota média dos exercícios (`dominio`) e nº de tentativas
-  (`engajamento`).
+  volume de exercícios de cada um (proxy observado; é uma escolha de modelagem declarada, assim como as definições de score). Scores: nota média dos exercícios (`dominio`) e nº de tentativas
+  (`engajamento`). Entram os 78 dos 86 tópicos que têm tempo de módulo e nota média registrados, com o mesmo arredondamento.
 
 ### 5.2 O que os dados reais mostraram
 
@@ -193,22 +188,18 @@ Pearson entre tempo e score (r = +1 andam juntos, 0 sem relação, −1 contrár
 | tópicos / engajamento | 78 | +0,29 | relação fraca |
 
 Dois resultados: (i) a hipótese do artigo — "dados de e-learning são correlacionados"
-— **se confirmou** na definição de score por conteúdo, r=+0,92, entre as famílias
-weakly e strongly correlated; (ii) **achado original**: o score de engajamento produz
-correlação *negativa*, um regime que a literatura de benchmarks sintéticos não gera e
-que dados reais de e-learning produzem naturalmente.
+— **se confirmou** na definição de score por conteúdo, r=+0,92, próximo da família weakly correlated (r=0,98 em uma instância sintética de mesmo n) e abaixo da strongly correlated (r=1,00); (ii) **observação**: o score de conclusão produz correlação *negativa*, um regime que as três famílias sintéticas deste trabalho não cobrem. Com n=12, essa estimativa deve ser lida com cautela.
 
-**Todos os exatos concordam; o greedy erra onde dói.** Nas 12 combinações (3 scores ×
+**Todos os exatos concordam; o greedy erra com orçamento apertado.** Nas 12 combinações (3 scores ×
 4 orçamentos), todos os algoritmos exatos acharam a mesma trilha ótima. O greedy
-perdeu até **21% com orçamento apertado** (aluno de 1h–1h30 por semana — o caso
-típico, não o exótico) e nada com orçamento folgado. No nível tópico (n=78) o pior gap
+perdeu até **21% com orçamento apertado**: 21,0% com 30 min e 17,3% com 1h (score de conclusão), e 18,8% com 1h30 (score de conteúdo). Com 20h a perda foi zero nos três scores. No nível tópico (n=78) o pior gap
 cai para 7,3% — confirmando em dado real a previsão de que o gap encolhe com n.
 
 **Granularidade: custo e fidelidade.** Repetindo o teste de pseudo-polinomialidade com
 a instância real (orçamento de 10h): em horas, a DP custa 132 operações; em minutos,
-7.212 — só ela cresce, como previsto, mas 7.212 operações seguem sendo milissegundos.
+7.212; os demais variam pouco e sem tendência (o B&B fica entre 124 e 348 operações), porque a mudança de unidade altera os tempos arredondados, mas não o tamanho do problema. E 7.212 operações seguem sendo milissegundos.
 O bônus do teste: **arredondar os tempos para horas mudou a própria resposta ótima**
-(49 ≠ 56 pontos). Unidade grossa não só não economiza nada relevante — distorce o
+(49 pontos em horas contra 56 em minutos, no score de conteúdo). Em horas, a trilha escolhida ocupa só 502 dos 600 minutos reais; em blocos de 15 min, o valor sobe para 57, mas a trilha soma 606 minutos e estoura o orçamento. Unidade grossa não só não economiza nada relevante — distorce o
 problema. Minutos + DP é barato e mais fiel.
 
 **Uma rodada, todos os orçamentos.** A última linha da tabela da DP entrega o ótimo
@@ -224,8 +215,8 @@ virtuais na nuvem com três camadas de raciocínio: regras rápidas, **metaheur�
 metaheurística — o bônus fecha essa lacuna adaptando o GRASP do MAS-Cloud+ ao domínio
 de trilhas, com semente fixa (reprodutível) e contador de operações como os demais.
 
-**Validação:** nas mesmas 1.800 instâncias do protocolo de correção, o GRASP achou o
-ótimo em **98,1%** dos casos (gap médio 0,044%, pior 9,4%).
+**Validação:** em 1.800 instâncias aleatórias geradas pelo protocolo de correção (três famílias, 40 sementes, cinco valores de ρ e n ∈ {8, 12, 16}), o GRASP achou o
+ótimo em **98,1%** dos casos (gap médio 0,044%, pior 9,4%). Os gaps do greedy na tabela abaixo vêm das 30 instâncias por célula deste experimento (ρ=0,3), com sementes diferentes das da Seção 4; por isso o pior caso em weakly correlated com n=8 aparece aqui como 25,0%, e lá como 25,9%.
 
 **Resultados principais:**
 
@@ -237,14 +228,12 @@ de trilhas, com semente fixa (reprodutível) e contador de operações como os d
 | instância adversarial | 2 (ótimo: 1000) | **1000** |
 | custo relativo ao greedy | 1× | 50× a 260× |
 
-**E a reviravolta que fecha a tese:** na instância real de tópicos (n=78), o GRASP
+**Comparação com a DP exata:** na instância real de tópicos (n=78), o GRASP
 custou **4,5× mais que a DP exata** (211.950 contra 46.878 operações) e ainda assim
-perdeu até 3,2% — mais caro e pior que o método exato, sem garantia nenhuma. Esse é
-exatamente o resultado do próprio MAS-Cloud+ no domínio dele, onde a otimização formal
+perdeu até 3,2%, mais que o próprio greedy nesse score (2,3%). No nível de módulos (n=12), o GRASP custou cerca de metade das operações da DP (3.580 contra 7.212), com gap de 0% a 1,5%. Nos dois níveis, só a DP garante o ótimo. Esse resultado vai na mesma direção do que o MAS-Cloud+ relata no domínio dele, onde a otimização formal
 superou a metaheurística em 19,3% de desempenho com 6,5% menos custo. **Nos dois
 domínios, quando a instância cabe no método exato, o exato vence; a metaheurística é o
-plano B para quando não cabe — e o T pequeno das trilhas de estudo nunca produz esse
-caso.**
+plano B para quando não cabe, e com o T pequeno das trilhas de estudo esse caso não apareceu em nenhuma instância testada.**
 
 ## 7. Discussão: qual algoritmo, quando
 
@@ -259,26 +248,22 @@ caso.**
 | Pré-requisitos (ordem) | enumeração como no RUTICO, ILP ou DP em árvore |
 
 A recomendação do trabalho é a **DP**, por cinco razões que os experimentos — agora
-também os reais — sustentam: (1) é exata, e o greedy demonstrou perder até 21% com o
-aluno típico de pouco tempo; (2) o parâmetro que a encarece (T) é pequeno neste
+também os reais — sustentam: (1) é exata, e o greedy demonstrou perder até 21% com o aluno de pouco tempo; (2) o parâmetro que a encarece (T) é pequeno neste
 domínio, e em minutos a conta é de milissegundos; (3) o custo é **previsível** —
 exatamente n(T+1) operações antes de rodar, enquanto o B&B oscilou 11–15× entre
-famílias e o GRASP não oferece garantia; (4) dados reais correlacionados (r=+0,92) são
-justamente o regime onde greedy e B&B pioram e a DP não se abala; (5) uma tabela
+famílias e o GRASP não oferece garantia; (4) o custo da DP não muda com a correlação dos dados, que nas instâncias reais variou de r=−0,62 a r=+0,92, enquanto o B&B se mostrou sensível a ela nos experimentos sintéticos; (5) uma tabela
 responde todos os orçamentos de uma vez.
 
 ## 8. Conclusão
 
 Modelamos a seleção de módulos sob orçamento de tempo como o problema da mochila 0/1 e
-mostramos que a programação dinâmica é a enumeração exaustiva do RUTICO **com
+mostramos que, no problema relaxado sem pré-requisitos, a programação dinâmica é a enumeração exaustiva do RUTICO **com
 memória**: as 2^n folhas da árvore de decisão colapsam em n(T+1) estados. Provamos a
 correção e os limites de custo de todos os algoritmos, validamos tudo com contadores
 de operações independentes de máquina, e levamos a comparação a dados reais de uma
-plataforma em produção — que confirmaram a hipótese de correlação, revelaram um regime
-negativamente correlacionado ausente da literatura de benchmarks e mostraram o greedy
-falhando exatamente no perfil de aluno que mais importa. O bônus GRASP fechou a última
-técnica que faltava e, ao ser dominado pela DP no nosso domínio, reproduziu em
-e-learning a conclusão do MAS-Cloud+ na nuvem: **quando o problema cabe no método
+plataforma em produção — que confirmaram a hipótese de correlação, mostraram um regime negativamente correlacionado que as famílias sintéticas testadas não cobrem e mostraram o greedy
+falhando no perfil de aluno com pouco tempo. O bônus GRASP fechou a última
+técnica que faltava e, ao ficar mais caro e menos preciso que a DP na instância de tópicos, chegou em e-learning a uma conclusão alinhada à do MAS-Cloud+ na nuvem: **quando o problema cabe no método
 exato, o exato vence.**
 
 **Trabalhos futuros.** Reintroduzir os pré-requisitos (mochila com precedência —
@@ -297,10 +282,20 @@ python experiment_grasp.py        # bônus GRASP
 ```
 
 Saídas em `results/*.csv`. Os dados reais anonimizados estão em `real_data/`;
-reproduzir os experimentos **não** exige nenhum acesso à infraestrutura do Sebrae.
+reproduzir os experimentos **não** exige nenhum acesso à infraestrutura do Sebrae. Os scripts de dados reais e do GRASP estão no branch `real-data-guia` do repositório; o branch `main` contém apenas os experimentos sintéticos.
 
 ## Anexo: divisão de atividades
 
-Conforme o artigo: estudo do RUTICO e DFS; DP, provas e instância de teste; greedy,
-ordenação e algoritmos extras; experimentos, gráficos e escrita. Todos os membros
-revisaram o código e o texto integralmente e respondem por qualquer parte.
+Cada frente teve um responsável, identificado também na docstring de cada arquivo
+de código (`Responsável: ...`):
+
+| Integrante | Atividades | Arquivos principais |
+|---|---|---|
+| **Lalia Sadio** | Estudo do artigo (RUTICO) e implementação de referência: DFS exaustivo e DFS sobre o grafo do curso | `algorithms/dfs.py`, `algorithms/graph_dfs.py` |
+| **Adriana Souza** | Programação dinâmica (3 variantes), análise de complexidade e prova do custo n(T+1) | `algorithms/dp.py` |
+| **Leandro Bergmann** | Algoritmos de comparação: greedy (com merge sort próprio), branch and bound, meet-in-the-middle, FPTAS e GRASP | `algorithms/greedy.py`, `algorithms/sorting.py`, `algorithms/branch_and_bound.py`, `algorithms/meet_in_the_middle.py`, `algorithms/fptas.py`, `algorithms/grasp.py` |
+| **Dalila Rezende** | Instâncias sintéticas e reais (extração agregada e anonimizada do GuIA), rotinas de experimento, métricas de tempo, gráficos e redação do relatório | `instances.py`, `real_instances.py`, `experiment*.py`, `real_data/`, `results/` |
+
+O modelo comum (`algorithms/model.py`) foi definido em conjunto. Todos os membros
+revisaram o código e o texto integralmente e respondem por qualquer parte do
+trabalho.

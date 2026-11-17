@@ -1,4 +1,7 @@
-"""Hand-written merge sort: Θ(n log n) in every case, stable, with a comparison counter."""
+"""Hand-written merge sort: Θ(n log n) in every case, stable, with a comparison counter.
+
+Responsável: Leandro Bergmann — revisado por todo o grupo.
+"""
 
 
 def merge(left, right, comes_before, counter):

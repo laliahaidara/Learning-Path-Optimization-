@@ -1,4 +1,7 @@
-"""Greedy approach by score/time ratio (comparison algorithm) and its guaranteed variant."""
+"""Greedy approach by score/time ratio (comparison algorithm) and its guaranteed variant.
+
+Responsável: Leandro Bergmann — revisado por todo o grupo.
+"""
 from .model import Result
 from .sorting import sort_by_ratio
 

@@ -52,3 +52,17 @@ Check the course policy on AI tools and disclose its use if required.
 `report/report.pdf` is the final paper. To edit it (member names are on the cover page and in the
 Members section), change `report/report.tex` and `report/sections/*.tex` and run `pdflatex report.tex` twice
 inside `report/`. After re-running the experiments, run `python report/make_tables.py` to refresh the tables.
+
+## Group and division of work
+Each code file carries its owner in the module docstring (`Responsável: ...`); the full
+activity table is in the report's annex ("Anexo: divisão de atividades").
+
+| Member | Front | Main files |
+|---|---|---|
+| Lalia Sadio | Paper study (RUTICO) and reference implementation | `algorithms/dfs.py`, `algorithms/graph_dfs.py` |
+| Adriana Souza | Dynamic programming and complexity analysis | `algorithms/dp.py` |
+| Leandro Bergmann | Comparison algorithms (greedy, B&B, MITM, FPTAS, GRASP) | `algorithms/greedy.py`, `algorithms/sorting.py`, `algorithms/branch_and_bound.py`, `algorithms/meet_in_the_middle.py`, `algorithms/fptas.py`, `algorithms/grasp.py` |
+| Dalila Rezende | Instances (synthetic and real), experiments, metrics and report | `instances.py`, `real_instances.py`, `experiment*.py`, `real_data/`, `results/` |
+
+`algorithms/model.py` (shared data model) was defined jointly; every member reviewed all
+code and text and can answer for any part.

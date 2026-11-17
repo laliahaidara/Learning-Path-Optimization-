@@ -18,6 +18,8 @@ The randomness is seeded, so every run is reproducible; the experiments
 report the mean and the worst result over several seeds. The operation
 counter adds the sort comparisons, every feasibility test of the
 construction and every candidate evaluated by the local search.
+
+Responsável: Leandro Bergmann — revisado por todo o grupo.
 """
 import random
 

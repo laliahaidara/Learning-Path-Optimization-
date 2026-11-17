@@ -2,6 +2,8 @@
 
 Enumerates every simple path starting at the source whose total time fits the budget and
 returns the one with the highest score. Here there is precedence (edges), unlike 0/1 knapsack.
+
+Responsável: Lalia Sadio — revisado por todo o grupo.
 """
 
 
