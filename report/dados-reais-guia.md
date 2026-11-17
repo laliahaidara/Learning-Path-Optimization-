@@ -331,3 +331,25 @@ Saídas em `results/real_*.csv`. Os dados anonimizados estão versionados em
 `real_data/`; os scripts de extração (`real_data/*.js`) ficam no repo como registro de
 método — rodá-los exige acesso à infraestrutura do Sebrae, que **não** é necessária
 pra reproduzir nenhum experimento.
+
+## 7. Contexto de produção — matrículas (extração de 16/11/2026)
+
+Agregados do banco de produção do GuIA (consulta somente-leitura, apenas
+`COUNT`/`GROUP BY` — nenhum dado individual saiu do banco). Cursos seguem a
+mesma convenção de anonimização do `curso_idx` dos CSVs; o curso 1 (backup, sem
+uso) não recebe matrículas. Arquivos: `real_data/guia_enrollments_agg.csv` e
+`real_data/guia_enrollments_mensal.csv`.
+
+- **3.955 matrículas** de **3.818 alunos únicos**, entre **07/07/2026 e 16/11/2026**.
+- Por curso: curso 2 → 3.073 (desde 07/07), curso 3 → 705 (desde 29/09),
+  curso 4 → 177 (desde 15/10).
+- Por mês: 56 (jul), 109 (ago), 2.009 (set), 902 (out), 879 (nov, mês parcial).
+- Situação das matrículas: 2.430 expiradas, 1.421 ativas, **70 concluídas**,
+  20 reiniciadas, 14 canceladas.
+
+**Por que isso importa pro paper (Seção "Situação real"):** das 3.955 matrículas,
+só 70 (1,8%) chegaram à conclusão e 61% expiraram antes de concluir — enquanto o
+tempo mediano somado dos módulos com medição do curso 2 passa de 14 h. É a
+evidência quantitativa de que a plataforma oferece mais conteúdo do que o aluno
+tem tempo de estudar: com orçamentos semanais de 2 h, 5 h ou 10 h, escolher *o que*
+estudar é inevitável — exatamente o knapsack 0/1 do trabalho.

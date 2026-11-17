@@ -1,0 +1,6 @@
+conjunto,instancias,oraculos_divergem,selecao_dp_inviavel,maior_diferenca,divergencias DP (tabela),divergencias DP (memoizada),divergencias DP (vetor),divergencias B&B,divergencias MITM,divergencias DFS
+protocolo de correção (n<=16),1200,0,0,0,0,0,0,0,0,0
+protocolo do GRASP (n<=16),1800,0,0,0,0,0,0,0,0,0
+sintéticas grandes (n=50..600),90,0,0,0,0,0,0,,,
+"reais, módulos (n=12)",285,0,0,0,0,0,0,0,0,0
+"reais, tópicos (n=78)",158,0,0,0,0,0,0,0,,

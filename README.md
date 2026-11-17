@@ -16,6 +16,7 @@ algorithms/               # ALGORITHM files (one module per algorithm)
   fptas.py                # extra comparison: (1-ε)-approximation
 instances.py              # generators (uncorrelated / weakly / strongly correlated)
 experiment.py             # EXPERIMENT file: test instance + 8 experiment blocks
+experiment_validation.py  # independent validation against OR-Tools, SciPy and NumPy
 results/                  # CSVs, plots (PNG) and the full output of one run
 report/                   # the paper: report.pdf (final), report.tex + sections/ (editable LaTeX source),
                           # figures/, make_tables.py (regenerates the tables from results/*.csv)
@@ -29,6 +30,18 @@ python experiment.py --quick          # reduced version
 python experiment.py --only demo correctness
 ```
 Blocks: demo, correctness, time, scale, quality, pseudo, families, fptas, graph.
+
+## Independent validation (external libraries)
+The other experiments compare the hand-written algorithms with each other. This one checks them
+against established libraries: OR-Tools and SciPy/HiGHS as optimum oracles, NumPy and SciPy for
+the Pearson correlation, and Python's `sorted()` for the merge sort.
+```
+pip install ortools scipy numpy
+python experiment_validation.py                 # all blocks (~10 min)
+python experiment_validation.py --only optimum  # one block
+```
+Blocks: optimum, guarantees, sorting, pearson, runtime, bnb. Outputs: `results/validation_*.csv`.
+It needs the real-data files of the `real-data-guia` branch (`real_instances.py`, `real_data/`).
 
 ## Note
 Understand and rewrite the code with your own structure and naming before submitting
