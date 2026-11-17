@@ -341,8 +341,17 @@ uso) não recebe matrículas. Arquivos: `real_data/guia_enrollments_agg.csv` e
 `real_data/guia_enrollments_mensal.csv`.
 
 - **3.955 matrículas** de **3.818 alunos únicos**, entre **07/07/2026 e 16/11/2026**.
-- Por curso: curso 2 → 3.073 (desde 07/07), curso 3 → 705 (desde 29/09),
-  curso 4 → 177 (desde 15/10).
+- Por curso, já cruzando com os tempos medidos do `guia_modules_anon.csv`
+  (mediana do tempo real de estudo por módulo, em minutos — só módulos com
+  sessões concluídas suficientes têm medição; é o n = 12 do paper):
+
+| curso_idx | matrículas | desde | módulos | medidos | medianas por módulo (min) | soma medida |
+|---|---:|---|---:|---:|---|---|
+| 2 | 3.073 | 07/07 | 6 | 5 | 109,7 · 204,5 · 376,0 · 69,6 · 104,2 | 864,0 min (14,4 h) |
+| 3 | 705 | 29/09 | 4 | 3 | 34,6 · 46,1 · 16,5 | 97,2 min (1,6 h) |
+| 4 | 177 | 15/10 | 5 | 4 | 28,7 · 32,0 · 21,7 · 63,6 | 146,0 min (2,4 h) |
+| **total** | **3.955** | — | 15 | **12** | mín 16,5 · máx 376,0 (23×) | 1.107,2 min (18,5 h) |
+
 - Por mês: 56 (jul), 109 (ago), 2.009 (set), 902 (out), 879 (nov, mês parcial).
 - Situação das matrículas: 2.430 expiradas, 1.421 ativas, **70 concluídas**,
   20 reiniciadas, 14 canceladas.
